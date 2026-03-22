@@ -1,0 +1,47 @@
+# -----------------------------
+# GO BUILD FILES
+# -----------------------------
+/bin/
+/build/
+/dist/
+/tmp/
+/tmp/*
+
+# Go binary output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go checksums
+*.out
+
+# -----------------------------
+# ENV & CONFIG
+# -----------------------------
+.env
+.env.local
+.env.*
+!.env.example
+
+# Air / Live Reload
+.air
+.air.toml
+
+# Logs
+*.log
+logs/
+
+# -----------------------------
+# IDE / EDITOR
+# -----------------------------
+.vscode/
+.idea/
+*.swp
+
+# -----------------------------
+# Docker
+# -----------------------------
+/volumes/

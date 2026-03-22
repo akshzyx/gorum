@@ -1,0 +1,136 @@
+package postgres
+
+import (
+	"context"
+
+	db "github.com/akshzyx/gorum/internal/db/sqlc/generated"
+	"github.com/akshzyx/gorum/internal/domain/post"
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type PostRepository struct {
+	q *db.Queries
+}
+
+func NewPostRepository(q *db.Queries) *PostRepository {
+	return &PostRepository{q: q}
+}
+
+func (r *PostRepository) Create(ctx context.Context, p *post.Post) error {
+	_, err := r.q.CreatePost(ctx, db.CreatePostParams{
+		ID:      p.ID,
+		UserID:  p.UserID,
+		Content: p.Content,
+	})
+
+	return err
+}
+
+func (r *PostRepository) GetByID(ctx context.Context, id string) (*post.Post, error) {
+	row, err := r.q.GetPostByID(ctx, id)
+	if err != nil {
+		return nil, post.ErrPostNotFound
+	}
+
+	return &post.Post{
+		ID:        row.ID,
+		UserID:    row.UserID,
+		Content:   row.Content,
+		CreatedAt: row.CreatedAt.Time,
+	}, nil
+}
+
+func (r *PostRepository) DeleteByOwner(ctx context.Context, postID, userID string) error {
+	return r.q.DeletePostByIDAndUser(ctx, db.DeletePostByIDAndUserParams{
+		ID:     postID,
+		UserID: userID,
+	})
+}
+
+func (r *PostRepository) ListLatest(ctx context.Context, limit int32) ([]*post.Post, error) {
+	rows, err := r.q.ListLatestPosts(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	posts := make([]*post.Post, 0, len(rows))
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:      row.ID,
+			UserID:  row.UserID,
+			Content: row.Content,
+		})
+	}
+
+	return posts, nil
+}
+
+func (r *PostRepository) GetPostForReply(ctx context.Context, id string) (*post.Post, error) {
+	row, err := r.q.GetPostForReply(ctx, id)
+	if err != nil {
+		return nil, post.ErrPostNotFound
+	}
+
+	return &post.Post{
+		ID:         row.ID,
+		RootPostID: &row.RootPostID.String,
+	}, nil
+}
+
+func (r *PostRepository) CreateReply(ctx context.Context, p *post.Post) error {
+	_, err := r.q.CreateReply(ctx, db.CreateReplyParams{
+		ID:           p.ID,
+		UserID:       p.UserID,
+		Content:      p.Content,
+		ParentPostID: pgtype.Text{String: *p.ParentPostID, Valid: true},
+		RootPostID:   pgtype.Text{String: *p.RootPostID, Valid: true},
+	})
+	return err
+}
+
+func (r *PostRepository) ListReplies(ctx context.Context, postID string) ([]*post.Post, error) {
+	rows, err := r.q.ListReplies(ctx, pgtype.Text{
+		String: postID,
+		Valid:  true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}
+
+func (r *PostRepository) GetThread(ctx context.Context, rootID string) ([]*post.Post, error) {
+	rows, err := r.q.GetThread(ctx, rootID)
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		var parentID *string
+		if row.ParentPostID.Valid {
+			parentID = &row.ParentPostID.String
+		}
+
+		posts = append(posts, &post.Post{
+			ID:           row.ID,
+			UserID:       row.UserID,
+			Content:      row.Content,
+			ParentPostID: parentID,
+			CreatedAt:    row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}
