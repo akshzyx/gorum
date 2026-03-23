@@ -17,25 +17,25 @@ func NewRouter(
 ) *chi.Mux {
 	r := chi.NewRouter()
 
-	// HEALTH CHECK
+	// basic health check endpoint
 	r.Get("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	// API v1
+	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Authentication
+		// auth routes (signup, login, activation)
 		r.Mount("/auth", routes.AuthRoutes(authHandler))
 
-		// Public user profiles
+		// public user profile routes
 		r.Mount("/user", routes.UserRoutes(userHandler))
 
-		// Posts (tweets + replies)
+		// post routes (currently public, can restrict later)
 		r.Mount("/post", routes.PostRoutes(postHandler))
 
-		// User settings (JWT required)
+		// routes that require a logged-in user
 		r.Group(func(r chi.Router) {
-			r.Use(middlewares.JWTAuth)
+			r.Use(middlewares.RequireAuth) // enforce auth before reaching handlers
 			r.Mount("/settings", routes.SettingsRoutes(settingsHandler))
 		})
 	})

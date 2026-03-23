@@ -2,7 +2,6 @@ package auth
 
 import "time"
 
-
 type VerificationToken struct {
 	Token     string
 	UserID    string

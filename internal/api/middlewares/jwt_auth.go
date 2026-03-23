@@ -13,12 +13,13 @@ type contextKey string
 
 const UserIDKey contextKey = "user_id"
 
-func JWTAuth(next http.Handler) http.Handler {
+// OptionalAuth attaches user to context if token is present.
+// If no token is provided, request continues as unauthenticated.
+func OptionalAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			// no token -> proceed without user (public access)
+			// No token → treat as guest request
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -32,17 +33,54 @@ func JWTAuth(next http.Handler) http.Handler {
 
 		claims, err := util.ValidateJWT(tokenStr)
 		if err != nil {
-			util.BadRequest(w, r, err)
+			// Token exists but is invalid → unauthorized
+			util.Unauthorized(w, r, err)
 			return
 		}
 
 		userID, err := util.ExtractUserID(claims)
 		if err != nil {
-			util.BadRequest(w, r, err)
+			util.Unauthorized(w, r, err)
 			return
 		}
 
-		// Add userID to request context
+		// Attach user ID to request context
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// RequireAuth enforces authentication.
+// Request is rejected if token is missing or invalid.
+func RequireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			// Missing token → reject immediately
+			util.Unauthorized(w, r, errors.New("missing authorization token"))
+			return
+		}
+
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			util.BadRequest(w, r, errors.New("invalid authorization header"))
+			return
+		}
+
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+
+		claims, err := util.ValidateJWT(tokenStr)
+		if err != nil {
+			util.Unauthorized(w, r, err)
+			return
+		}
+
+		userID, err := util.ExtractUserID(claims)
+		if err != nil {
+			util.Unauthorized(w, r, err)
+			return
+		}
+
+		// At this point user is guaranteed to be authenticated
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

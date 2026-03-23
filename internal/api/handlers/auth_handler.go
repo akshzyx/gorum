@@ -30,7 +30,12 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.service.Signup(r.Context(), req)
 	if err != nil {
-		util.BadRequest(w, r, err)
+		switch err {
+		case auth.ErrEmailExists:
+			util.WriteJSONError(w, http.StatusConflict, err.Error())
+		default:
+			util.InternalServerError(w, r, err)
+		}
 		return
 	}
 
@@ -52,7 +57,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.service.Login(r.Context(), req)
 	if err != nil {
-		util.BadRequest(w, r, err)
+		switch err {
+		case auth.ErrInvalidCredentials:
+			util.Unauthorized(w, r, err)
+		case auth.ErrEmailNotVerified:
+			util.WriteJSONError(w, http.StatusForbidden, err.Error())
+		default:
+			util.InternalServerError(w, r, err)
+		}
 		return
 	}
 
@@ -72,8 +84,18 @@ func (h *AuthHandler) Activate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Activate(r.Context(), req); err != nil {
-		util.BadRequest(w, r, err)
+	err := h.service.Activate(r.Context(), req)
+	if err != nil {
+		switch err {
+		case auth.ErrTokenNotFound:
+			util.WriteJSONError(w, http.StatusNotFound, err.Error())
+		case auth.ErrTokenExpired:
+			util.WriteJSONError(w, http.StatusBadRequest, err.Error())
+		case auth.ErrTokenUsed:
+			util.WriteJSONError(w, http.StatusBadRequest, err.Error())
+		default:
+			util.InternalServerError(w, r, err)
+		}
 		return
 	}
 
@@ -95,8 +117,20 @@ func (h *AuthHandler) ResendActivation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: implement fully later
+	err := h.service.ResendActivation(r.Context(), req)
+	if err != nil {
+		switch err {
+		case auth.ErrUserNotFound:
+			util.WriteJSONError(w, http.StatusNotFound, err.Error())
+		case auth.ErrAlreadyVerified:
+			util.WriteJSONError(w, http.StatusBadRequest, err.Error())
+		default:
+			util.InternalServerError(w, r, err)
+		}
+		return
+	}
+
 	util.WriteJSON(w, http.StatusOK, map[string]string{
-		"status": "email resent (not implemented yet)",
+		"status": "activation email resent",
 	})
 }

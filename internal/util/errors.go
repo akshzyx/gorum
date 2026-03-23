@@ -16,6 +16,12 @@ func BadRequest(w http.ResponseWriter, r *http.Request, err error) {
 	WriteJSONError(w, http.StatusBadRequest, err.Error())
 }
 
+// Unauthorized sends a 401 response when auth fails
+func Unauthorized(w http.ResponseWriter, r *http.Request, err error) {
+	log.Printf("[401] %s %s - %v", r.Method, r.URL.Path, err)
+	WriteJSONError(w, http.StatusUnauthorized, "unauthorized")
+}
+
 // InternalServerError sends a 500 response with logging
 func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
 	log.Printf("[500] %s %s - %v", r.Method, r.URL.Path, err)
