@@ -30,6 +30,9 @@ func (r *UserRepository) Create(ctx context.Context, id, username, email, passwo
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (user.User, error) {
 	row, err := r.q.GetUserByEmail(ctx, email)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user.User{}, user.ErrNotFound
+		}
 		return user.User{}, err
 	}
 
@@ -62,7 +65,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (us
 	}, nil
 }
 
-// PUBLIC PROFILE
+// public profile only returns safe fields
 func (r *UserRepository) GetPublicByUsername(
 	ctx context.Context,
 	username string,
@@ -85,6 +88,9 @@ func (r *UserRepository) GetPublicByUsername(
 func (r *UserRepository) GetByID(ctx context.Context, id string) (user.User, error) {
 	row, err := r.q.GetUserByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user.User{}, user.ErrNotFound
+		}
 		return user.User{}, err
 	}
 
@@ -97,17 +103,6 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (user.User, err
 		CreatedAt:    row.CreatedAt.Time,
 	}, nil
 }
-
-// func (r *UserRepository) UpdateProfile(
-// 	ctx context.Context,
-// 	userID, bio, avatarURL string,
-// ) error {
-// 	return r.q.UpdateUserProfile(ctx, db.UpdateUserProfileParams{
-// 		ID:        userID,
-// 		Bio:       bio,
-// 		AvatarURL: avatarURL,
-// 	})
-// }
 
 func (r *UserRepository) UpdateEmail(
 	ctx context.Context,

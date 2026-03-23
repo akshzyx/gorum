@@ -16,27 +16,6 @@ func NewSettingsHandler(service *user.Service) *SettingsHandler {
 	return &SettingsHandler{service: service}
 }
 
-// func (h *SettingsHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
-// 	var req user.UpdateProfileRequest
-// 	if err := util.ReadJSON(r, &req); err != nil {
-// 		util.BadRequest(w, r, err)
-// 		return
-// 	}
-
-// 	ctxUserID := r.Context().Value(middlewares.UserIDKey)
-// 	if ctxUserID == nil {
-// 		util.WriteJSONError(w, http.StatusUnauthorized, "unauthorized")
-// 		return
-// 	}
-
-// 	if err := h.service.UpdateProfile(r.Context(), ctxUserID.(string), req); err != nil {
-// 		util.InternalServerError(w, r, err)
-// 		return
-// 	}
-
-// 	w.WriteHeader(http.StatusNoContent)
-// }
-
 func (h *SettingsHandler) UpdateEmail(w http.ResponseWriter, r *http.Request) {
 	var req user.UpdateEmailRequest
 	if err := util.ReadJSON(r, &req); err != nil {
@@ -44,13 +23,19 @@ func (h *SettingsHandler) UpdateEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctxUserID := r.Context().Value(middlewares.UserIDKey)
-	if ctxUserID == nil {
-		util.WriteJSONError(w, http.StatusUnauthorized, "unauthorized")
+	if err := util.ValidateStruct(req); err != nil {
+		util.BadRequest(w, r, err)
 		return
 	}
 
-	if err := h.service.UpdateEmail(r.Context(), ctxUserID.(string), req); err != nil {
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
+	if !ok {
+		util.Unauthorized(w, r, nil)
+		return
+	}
+
+	err := h.service.UpdateEmail(r.Context(), userID, req)
+	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
 	}
@@ -65,14 +50,27 @@ func (h *SettingsHandler) UpdatePassword(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	ctxUserID := r.Context().Value(middlewares.UserIDKey)
-	if ctxUserID == nil {
-		util.WriteJSONError(w, http.StatusUnauthorized, "unauthorized")
+	if err := util.ValidateStruct(req); err != nil {
+		util.BadRequest(w, r, err)
 		return
 	}
 
-	if err := h.service.UpdatePassword(r.Context(), ctxUserID.(string), req); err != nil {
-		util.WriteJSONError(w, http.StatusUnauthorized, err.Error())
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
+	if !ok {
+		util.Unauthorized(w, r, nil)
+		return
+	}
+
+	err := h.service.UpdatePassword(r.Context(), userID, req)
+	if err != nil {
+		switch err {
+		case user.ErrInvalidPassword:
+			util.Unauthorized(w, r, err)
+		case user.ErrNotFound:
+			util.NotFound(w, r)
+		default:
+			util.InternalServerError(w, r, err)
+		}
 		return
 	}
 

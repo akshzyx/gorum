@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 
 	"github.com/akshzyx/gorum/internal/util"
 )
@@ -15,34 +14,35 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) UpdateProfile(context context.Context, param any, req UpdateProfileRequest) any {
-	panic("unimplemented")
-}
-
+// GetByEmail is mostly internal use (auth), returns raw repo result
 func (s *Service) GetByEmail(ctx context.Context, email string) (User, error) {
-	return s.repo.GetByEmail(ctx, email)
+	u, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		return User{}, ErrNotFound
+	}
+	return u, nil
 }
 
 func (s *Service) GetPublicProfile(
 	ctx context.Context,
 	username string,
 ) (PublicProfileResponse, error) {
-	return s.repo.GetPublicByUsername(ctx, username)
+	profile, err := s.repo.GetPublicByUsername(ctx, username)
+	if err != nil {
+		return PublicProfileResponse{}, ErrNotFound
+	}
+	return profile, nil
 }
-
-// func (s *Service) UpdateProfile(
-// 	ctx context.Context,
-// 	userID string,
-// 	req UpdateProfileRequest,
-// ) error {
-// 	return s.repo.UpdateProfile(ctx, userID, req.Bio, req.AvatarURL)
-// }
 
 func (s *Service) UpdateEmail(
 	ctx context.Context,
 	userID string,
 	req UpdateEmailRequest,
 ) error {
+	if req.Email == "" {
+		return ErrForbidden
+	}
+
 	return s.repo.UpdateEmail(ctx, userID, req.Email)
 }
 
@@ -53,11 +53,11 @@ func (s *Service) UpdatePassword(
 ) error {
 	u, err := s.repo.GetByID(ctx, userID)
 	if err != nil {
-		return err
+		return ErrNotFound
 	}
 
 	if !util.CheckPasswordHash(req.CurrentPassword, u.PasswordHash) {
-		return errors.New("invalid password")
+		return ErrInvalidPassword
 	}
 
 	hash, err := util.HashPassword(req.NewPassword)
