@@ -7,7 +7,7 @@ type Repository interface {
 	GetByUsername(ctx context.Context, username string) (User, error)
 	GetPublicByUsername(ctx context.Context, username string) (PublicProfileResponse, error)
 
-	// UpdateProfile(ctx context.Context, userID, bio, avatarURL string) error
+	UpdateProfile(ctx context.Context, userID, bio, avatarURL string) error
 	UpdateEmail(ctx context.Context, userID, email string) error
 	UpdatePassword(ctx context.Context, userID, passwordHash string) error
 

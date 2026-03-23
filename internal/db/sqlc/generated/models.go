@@ -33,4 +33,6 @@ type User struct {
 	PasswordHash string           `json:"password_hash"`
 	CreatedAt    pgtype.Timestamp `json:"created_at"`
 	IsVerified   bool             `json:"is_verified"`
+	Bio          pgtype.Text      `json:"bio"`
+	AvatarUrl    pgtype.Text      `json:"avatar_url"`
 }

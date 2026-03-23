@@ -8,7 +8,7 @@ import (
 func SettingsRoutes(h *handlers.SettingsHandler) chi.Router {
 	r := chi.NewRouter()
 
-	// r.Patch("/profile", h.UpdateProfile)
+	r.Patch("/profile", h.UpdateProfile)
 	r.Patch("/email", h.UpdateEmail)
 	r.Patch("/password", h.UpdatePassword)
 

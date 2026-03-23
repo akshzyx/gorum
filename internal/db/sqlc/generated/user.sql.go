@@ -151,7 +151,6 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 }
 
 const updateUserEmail = `-- name: UpdateUserEmail :exec
-
 UPDATE users
 SET email = $2,
     is_verified = FALSE
@@ -163,13 +162,6 @@ type UpdateUserEmailParams struct {
 	Email string `json:"email"`
 }
 
-// -- name: UpdateUserProfile :exec
-// UPDATE users
-// SET bio = $2,
-//
-//	avatar_url = $3
-//
-// WHERE id = $1;
 func (q *Queries) UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error {
 	_, err := q.db.Exec(ctx, updateUserEmail, arg.ID, arg.Email)
 	return err
@@ -188,5 +180,23 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
+	return err
+}
+
+const updateUserProfile = `-- name: UpdateUserProfile :exec
+UPDATE users
+SET bio = $2,
+    avatar_url = $3
+WHERE id = $1
+`
+
+type UpdateUserProfileParams struct {
+	ID        string      `json:"id"`
+	Bio       pgtype.Text `json:"bio"`
+	AvatarUrl pgtype.Text `json:"avatar_url"`
+}
+
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error {
+	_, err := q.db.Exec(ctx, updateUserProfile, arg.ID, arg.Bio, arg.AvatarUrl)
 	return err
 }

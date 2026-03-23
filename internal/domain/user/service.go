@@ -67,3 +67,18 @@ func (s *Service) UpdatePassword(
 
 	return s.repo.UpdatePassword(ctx, userID, hash)
 }
+
+func (s *Service) UpdateProfile(
+	ctx context.Context,
+	userID string,
+	req UpdateProfileRequest,
+) error {
+	bio := req.Bio
+	avatarURL := req.AvatarURL
+
+	if bio == "" && avatarURL == "" {
+		return nil
+	}
+
+	return s.repo.UpdateProfile(ctx, userID, bio, avatarURL)
+}

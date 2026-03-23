@@ -76,3 +76,31 @@ func (h *SettingsHandler) UpdatePassword(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *SettingsHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	var req user.UpdateProfileRequest
+
+	if err := util.ReadJSON(r, &req); err != nil {
+		util.BadRequest(w, r, err)
+		return
+	}
+
+	if err := util.ValidateStruct(req); err != nil {
+		util.BadRequest(w, r, err)
+		return
+	}
+
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
+	if !ok {
+		util.Unauthorized(w, r, nil)
+		return
+	}
+
+	err := h.service.UpdateProfile(r.Context(), userID, req)
+	if err != nil {
+		util.InternalServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

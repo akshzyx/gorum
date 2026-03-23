@@ -7,6 +7,7 @@ import (
 	db "github.com/akshzyx/gorum/internal/db/sqlc/generated"
 	"github.com/akshzyx/gorum/internal/domain/user"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type UserRepository struct {
@@ -121,5 +122,25 @@ func (r *UserRepository) UpdatePassword(
 	return r.q.UpdateUserPassword(ctx, db.UpdateUserPasswordParams{
 		ID:           userID,
 		PasswordHash: hash,
+	})
+}
+
+func (r *UserRepository) UpdateProfile(
+	ctx context.Context,
+	userID, bio, avatarURL string,
+) error {
+	return r.q.UpdateUserProfile(ctx, db.UpdateUserProfileParams{
+		ID: userID,
+
+		// pgtype.Text used because columns can be null
+		Bio: pgtype.Text{
+			String: bio,
+			Valid:  bio != "",
+		},
+
+		AvatarUrl: pgtype.Text{
+			String: avatarURL,
+			Valid:  avatarURL != "",
+		},
 	})
 }

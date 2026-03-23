@@ -27,11 +27,11 @@ SELECT id, username, created_at
 FROM users
 WHERE username = $1;
 
--- -- name: UpdateUserProfile :exec
--- UPDATE users
--- SET bio = $2,
---     avatar_url = $3
--- WHERE id = $1;
+-- name: UpdateUserProfile :exec
+UPDATE users
+SET bio = $2,
+    avatar_url = $3
+WHERE id = $1;
 
 -- name: UpdateUserEmail :exec
 UPDATE users
