@@ -8,10 +8,10 @@ SELECT id, user_id, content, created_at
 FROM posts
 WHERE id = $1 AND deleted_at IS NULL;
 
--- name: DeletePostByIDAndUser :exec
+-- name: DeletePostByID :exec
 UPDATE posts
 SET deleted_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;
+WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: ListLatestPosts :many
 SELECT id, user_id, content, created_at

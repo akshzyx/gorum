@@ -20,28 +20,35 @@ func NewPostHandler(service *post.Service) *PostHandler {
 }
 
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
-	UserID, ok := r.Context().Value(middlewares.UserIDKey).(string)
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
 	if !ok {
-		util.WriteJSONError(w, http.StatusUnauthorized, "unauthorised")
+		util.Unauthorized(w, r, nil)
 		return
 	}
 
 	var req post.CreatePostRequest
 	if err := util.ReadJSON(r, &req); err != nil {
-		util.WriteJSONError(w, http.StatusBadRequest, err.Error())
-	}
-
-	if err := util.ValidateStruct(req); err != nil {
-		util.WriteJSONError(w, http.StatusBadRequest, err.Error())
-	}
-
-	id, err := h.service.Create(r.Context(), UserID, &req)
-	if err != nil {
-		util.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		util.BadRequest(w, r, err)
 		return
 	}
 
-	util.WriteJSON(w, http.StatusOK, post.CreatePostResponse{ID: id})
+	if err := util.ValidateStruct(req); err != nil {
+		util.BadRequest(w, r, err)
+		return
+	}
+
+	id, err := h.service.Create(r.Context(), userID, &req)
+	if err != nil {
+		switch err {
+		case post.ErrInvalidContent:
+			util.BadRequest(w, r, err)
+		default:
+			util.InternalServerError(w, r, err)
+		}
+		return
+	}
+
+	util.WriteJSON(w, http.StatusCreated, post.CreatePostResponse{ID: id})
 }
 
 func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -49,29 +56,40 @@ func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	p, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
-		util.WriteJSONError(w, http.StatusNotFound, "post not found")
+		util.NotFound(w, r)
 		return
 	}
 
 	util.WriteJSON(w, http.StatusOK, post.PublicPostResponse{
 		ID:        p.ID,
+		UserID:    p.UserID,
 		Content:   p.Content,
 		CreatedAt: p.CreatedAt.Format(time.RFC3339),
 	})
 }
 
-func (h *PostHandler) DeleteByOwner(w http.ResponseWriter, r *http.Request) {
-	UserID, ok := r.Context().Value(middlewares.UserIDKey).(string)
+func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
 	if !ok {
-		util.WriteJSONError(w, http.StatusUnauthorized, "unauthorised")
+		util.Unauthorized(w, r, nil)
+		return
 	}
 
 	id := chi.URLParam(r, "id")
 
-	if err := h.service.DeleteByOwner(r.Context(), id, UserID); err != nil {
-		util.WriteJSONError(w, http.StatusUnauthorized, "not allowed")
+	err := h.service.Delete(r.Context(), id, userID)
+	if err != nil {
+		switch err {
+		case post.ErrPostNotFound:
+			util.NotFound(w, r)
+		case post.ErrForbidden:
+			util.WriteJSONError(w, http.StatusForbidden, err.Error())
+		default:
+			util.InternalServerError(w, r, err)
+		}
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -86,7 +104,7 @@ func (h *PostHandler) ListLatest(w http.ResponseWriter, r *http.Request) {
 
 	posts, err := h.service.ListLatest(r.Context(), limit)
 	if err != nil {
-		util.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		util.InternalServerError(w, r, err)
 		return
 	}
 
@@ -106,7 +124,7 @@ func (h *PostHandler) ListLatest(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) Reply(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
 	if !ok {
-		util.WriteJSONError(w, http.StatusUnauthorized, "unauthorized")
+		util.Unauthorized(w, r, nil)
 		return
 	}
 
@@ -114,18 +132,25 @@ func (h *PostHandler) Reply(w http.ResponseWriter, r *http.Request) {
 
 	var req post.CreateReplyRequest
 	if err := util.ReadJSON(r, &req); err != nil {
-		util.WriteJSONError(w, http.StatusBadRequest, err.Error())
+		util.BadRequest(w, r, err)
 		return
 	}
 
 	if err := util.ValidateStruct(req); err != nil {
-		util.WriteJSONError(w, http.StatusBadRequest, err.Error())
+		util.BadRequest(w, r, err)
 		return
 	}
 
 	id, err := h.service.Reply(r.Context(), userID, parentID, &req)
 	if err != nil {
-		util.WriteJSONError(w, http.StatusBadRequest, err.Error())
+		switch err {
+		case post.ErrPostNotFound:
+			util.NotFound(w, r)
+		case post.ErrInvalidContent:
+			util.BadRequest(w, r, err)
+		default:
+			util.InternalServerError(w, r, err)
+		}
 		return
 	}
 
@@ -139,7 +164,7 @@ func (h *PostHandler) ListReplies(w http.ResponseWriter, r *http.Request) {
 
 	posts, err := h.service.ListReplies(r.Context(), postID)
 	if err != nil {
-		util.WriteJSONError(w, http.StatusInternalServerError, err.Error())
+		util.InternalServerError(w, r, err)
 		return
 	}
 
@@ -161,7 +186,7 @@ func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 
 	posts, err := h.service.GetThread(r.Context(), rootID)
 	if err != nil {
-		util.WriteJSONError(w, http.StatusNotFound, "thread not found")
+		util.NotFound(w, r)
 		return
 	}
 

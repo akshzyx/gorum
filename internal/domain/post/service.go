@@ -2,6 +2,7 @@ package post
 
 import (
 	"context"
+	"strings"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -16,11 +17,16 @@ func NewService(repo Repository) *Service {
 	}
 }
 
-func (s *Service) Create(ctx context.Context, userId string, req *CreatePostRequest) (string, error) {
+func (s *Service) Create(ctx context.Context, userID string, req *CreatePostRequest) (string, error) {
+	content := strings.TrimSpace(req.Content)
+	if content == "" {
+		return "", ErrInvalidContent
+	}
+
 	p := &Post{
 		ID:      ulid.Make().String(),
-		UserID:  userId,
-		Content: req.Content,
+		UserID:  userID,
+		Content: content,
 	}
 
 	if err := s.repo.Create(ctx, p); err != nil {
@@ -31,11 +37,31 @@ func (s *Service) Create(ctx context.Context, userId string, req *CreatePostRequ
 }
 
 func (s *Service) GetByID(ctx context.Context, id string) (*Post, error) {
-	return s.repo.GetByID(ctx, id)
+	post, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, ErrPostNotFound
+	}
+
+	return post, nil
 }
 
-func (s *Service) DeleteByOwner(ctx context.Context, postID, userID string) error {
-	return s.repo.DeleteByOwner(ctx, postID, userID)
+// Delete checks ownership in the service layer before deleting the post.
+func (s *Service) Delete(ctx context.Context, postID, userID string) error {
+	post, err := s.repo.GetByID(ctx, postID)
+	if err != nil {
+		return ErrPostNotFound
+	}
+
+	// Only the owner of the post should be allowed to delete it.
+	if post.UserID != userID {
+		return ErrForbidden
+	}
+
+	if err := s.repo.Delete(ctx, postID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Service) ListLatest(ctx context.Context, limit int32) ([]*Post, error) {
@@ -43,6 +69,11 @@ func (s *Service) ListLatest(ctx context.Context, limit int32) ([]*Post, error) 
 }
 
 func (s *Service) Reply(ctx context.Context, userID string, parentID string, req *CreateReplyRequest) (string, error) {
+	content := strings.TrimSpace(req.Content)
+	if content == "" {
+		return "", ErrInvalidContent
+	}
+
 	parent, err := s.repo.GetPostForReply(ctx, parentID)
 	if err != nil {
 		return "", ErrPostNotFound
@@ -56,7 +87,7 @@ func (s *Service) Reply(ctx context.Context, userID string, parentID string, req
 	reply := &Post{
 		ID:           ulid.Make().String(),
 		UserID:       userID,
-		Content:      req.Content,
+		Content:      content,
 		ParentPostID: &parentID,
 		RootPostID:   &rootID,
 	}

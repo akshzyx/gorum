@@ -6,7 +6,7 @@ type Repository interface {
 	// Posts
 	Create(ctx context.Context, post *Post) error
 	GetByID(ctx context.Context, id string) (*Post, error)
-	DeleteByOwner(ctx context.Context, postID, userID string) error
+	Delete(ctx context.Context, postID string) error
 	ListLatest(ctx context.Context, limit int32) ([]*Post, error)
 
 	// Replies

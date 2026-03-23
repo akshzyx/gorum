@@ -22,7 +22,6 @@ func (r *PostRepository) Create(ctx context.Context, p *post.Post) error {
 		UserID:  p.UserID,
 		Content: p.Content,
 	})
-
 	return err
 }
 
@@ -40,11 +39,9 @@ func (r *PostRepository) GetByID(ctx context.Context, id string) (*post.Post, er
 	}, nil
 }
 
-func (r *PostRepository) DeleteByOwner(ctx context.Context, postID, userID string) error {
-	return r.q.DeletePostByIDAndUser(ctx, db.DeletePostByIDAndUserParams{
-		ID:     postID,
-		UserID: userID,
-	})
+// Delete by post ID. Ownership is checked in service layer.
+func (r *PostRepository) Delete(ctx context.Context, postID string) error {
+	return r.q.DeletePostByID(ctx, postID)
 }
 
 func (r *PostRepository) ListLatest(ctx context.Context, limit int32) ([]*post.Post, error) {
@@ -71,9 +68,14 @@ func (r *PostRepository) GetPostForReply(ctx context.Context, id string) (*post.
 		return nil, post.ErrPostNotFound
 	}
 
+	var rootID *string
+	if row.RootPostID.Valid {
+		rootID = &row.RootPostID.String
+	}
+
 	return &post.Post{
 		ID:         row.ID,
-		RootPostID: &row.RootPostID.String,
+		RootPostID: rootID,
 	}, nil
 }
 
