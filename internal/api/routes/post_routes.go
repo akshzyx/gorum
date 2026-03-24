@@ -9,7 +9,6 @@ import (
 func PostRoutes(h *handlers.PostHandler) chi.Router {
 	r := chi.NewRouter()
 
-
 	// Public routes
 	r.Get("/", h.ListLatest)
 	r.Get("/{id}", h.GetByID)
@@ -18,13 +17,12 @@ func PostRoutes(h *handlers.PostHandler) chi.Router {
 	r.Get("/{id}/replies", h.ListReplies)
 	r.Get("/{id}/thread", h.GetThread)
 
-
 	// Authenticated routes
 	r.Group(func(r chi.Router) {
-		r.Use(middlewares.JWTAuth)
+		r.Use(middlewares.RequireAuth)
 
 		r.Post("/", h.Create)
-		r.Delete("/{id}", h.DeleteByOwner)
+		r.Delete("/{id}", h.Delete)
 
 		// Reply to a post
 		r.Post("/{id}/reply", h.Reply)
