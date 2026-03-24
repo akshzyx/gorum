@@ -16,7 +16,7 @@ type AuthRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewAuthRepo(q *db.Queries, pool *pgxpool.Pool) *AuthRepo {
+func NewAuthRepo(q *db.Queries, pool *pgxpool.Pool) auth.Repository {
 	return &AuthRepo{
 		q:    q,
 		pool: pool,

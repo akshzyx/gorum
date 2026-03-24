@@ -15,6 +15,7 @@ func NewRouter(
 	userHandler *handlers.UserHandler,
 	settingsHandler *handlers.SettingsHandler,
 	postHandler *handlers.PostHandler,
+	followHandler *handlers.FollowHandler,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -32,8 +33,11 @@ func NewRouter(
 		r.Mount("/auth", routes.AuthRoutes(authHandler))
 
 		// public user profile routes
-		r.Mount("/user", routes.UserRoutes(userHandler))
-
+		// public user profile routes
+		r.Route("/user", func(r chi.Router) {
+			r.Mount("/", routes.UserRoutes(userHandler))
+			r.Mount("/", routes.FollowRoutes(followHandler))
+		})
 		// post routes (currently public, can restrict later)
 		r.Mount("/post", routes.PostRoutes(postHandler))
 

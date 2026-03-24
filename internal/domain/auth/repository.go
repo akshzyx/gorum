@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type AuthRepository interface {
+type Repository interface {
 	// USER LOOKUPS
 	GetUserByEmail(ctx context.Context, email string) (AuthUser, error)
 	GetUserByID(ctx context.Context, id string) (AuthUser, error)

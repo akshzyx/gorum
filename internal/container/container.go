@@ -8,6 +8,7 @@ import (
 	"github.com/akshzyx/gorum/internal/config"
 	db "github.com/akshzyx/gorum/internal/db/sqlc/generated"
 	"github.com/akshzyx/gorum/internal/domain/auth"
+	"github.com/akshzyx/gorum/internal/domain/follow"
 	"github.com/akshzyx/gorum/internal/domain/post"
 	"github.com/akshzyx/gorum/internal/domain/user"
 	"github.com/akshzyx/gorum/internal/infra/email"
@@ -47,17 +48,20 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	userRepo := postgres.NewUserRepository(queries)
 	authRepo := postgres.NewAuthRepo(queries, pool)
 	postRepo := postgres.NewPostRepository(queries)
+	followRepo := postgres.NewFollowRepository(queries)
 
 	// SERVICES
 	userService := user.NewService(userRepo)
 	authService := auth.NewService(authRepo, emailSender)
 	postService := post.NewService(postRepo)
+	followService := follow.NewService(followRepo)
 
 	// HANDLERS
 	userHandler := handlers.NewUserHandler(userService)
 	settingsHandler := handlers.NewSettingsHandler(userService)
 	authHandler := handlers.NewAuthHandler(authService)
 	postHandler := handlers.NewPostHandler(postService)
+	followHandler := handlers.NewFollowHandler(followService)
 
 	// ROUTER
 	router := api.NewRouter(
@@ -65,6 +69,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		userHandler,
 		settingsHandler,
 		postHandler,
+		followHandler,
 	)
 
 	return &Container{

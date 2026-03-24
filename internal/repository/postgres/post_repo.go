@@ -12,7 +12,7 @@ type PostRepository struct {
 	q *db.Queries
 }
 
-func NewPostRepository(q *db.Queries) *PostRepository {
+func NewPostRepository(q *db.Queries) post.Repository {
 	return &PostRepository{q: q}
 }
 

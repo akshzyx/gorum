@@ -14,7 +14,7 @@ type UserRepository struct {
 	q *db.Queries
 }
 
-func NewUserRepository(q *db.Queries) *UserRepository {
+func NewUserRepository(q *db.Queries) user.Repository {
 	return &UserRepository{q: q}
 }
 

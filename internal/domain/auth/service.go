@@ -11,12 +11,12 @@ import (
 
 // Service handles auth business logic
 type Service struct {
-	repo        AuthRepository
+	repo        Repository
 	emailSender EmailSender
 	tokenExpiry time.Duration
 }
 
-func NewService(repo AuthRepository, emailSender EmailSender) *Service {
+func NewService(repo Repository, emailSender EmailSender) *Service {
 	return &Service{
 		repo:        repo,
 		emailSender: emailSender,
