@@ -9,4 +9,5 @@ type User struct {
 	PasswordHash string
 	IsVerified   bool
 	CreatedAt    time.Time
+	AvatarURL    string
 }

@@ -95,6 +95,12 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (user.User, err
 		return user.User{}, err
 	}
 
+	// handle nullable avatar_url safely
+	var avatar string
+	if row.AvatarUrl.Valid {
+		avatar = row.AvatarUrl.String
+	}
+
 	return user.User{
 		ID:           row.ID,
 		Username:     row.Username,
@@ -102,6 +108,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (user.User, err
 		PasswordHash: row.PasswordHash,
 		IsVerified:   row.IsVerified,
 		CreatedAt:    row.CreatedAt.Time,
+		AvatarURL:    avatar,
 	}, nil
 }
 

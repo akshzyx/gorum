@@ -35,7 +35,10 @@ func NewRouter(
 
 		// routes that require a logged-in user
 		r.Group(func(r chi.Router) {
-			r.Use(middlewares.RequireAuth) // enforce auth before reaching handlers
+			r.Use(middlewares.RequireAuth)
+
+			r.Get("/me", userHandler.GetMe)
+
 			r.Mount("/settings", routes.SettingsRoutes(settingsHandler))
 		})
 	})

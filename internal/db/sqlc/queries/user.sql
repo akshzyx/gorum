@@ -8,7 +8,7 @@ FROM users
 WHERE email = $1;
 
 -- name: GetUserByID :one
-SELECT id, username, email, password_hash, is_verified, created_at
+SELECT id, username, email, password_hash, is_verified, created_at, avatar_url
 FROM users
 WHERE id = $1;
 

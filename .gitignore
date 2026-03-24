@@ -7,7 +7,9 @@
 /tmp/
 /tmp/*
 
-# Go binary output
+# -----------------------------
+# GO BINARY OUTPUT
+# -----------------------------
 *.exe
 *.exe~
 *.dll
@@ -15,22 +17,31 @@
 *.dylib
 *.test
 
-# Go checksums
+# -----------------------------
+# GO CHECKSUMS / OUTPUT
+# -----------------------------
 *.out
 
 # -----------------------------
-# ENV & CONFIG
+# ENVIRONMENT & CONFIG
 # -----------------------------
 .env
 .env.local
 .env.*
 !.env.example
 
-# Air / Live Reload
+# Misc
+test.md
+
+# -----------------------------
+# LIVE RELOAD (AIR)
+# -----------------------------
 .air
 .air.toml
 
-# Logs
+# -----------------------------
+# LOGS
+# -----------------------------
 *.log
 logs/
 
@@ -42,6 +53,6 @@ logs/
 *.swp
 
 # -----------------------------
-# Docker
+# DOCKER
 # -----------------------------
 /volumes/

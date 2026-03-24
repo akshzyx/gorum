@@ -8,6 +8,12 @@ type PublicProfileResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type MeResponse struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatar_url"`
+}
+
 type UpdateProfileRequest struct {
 	Bio       string `json:"bio" validate:"max=200"`
 	AvatarURL string `json:"avatar_url" validate:"url"`

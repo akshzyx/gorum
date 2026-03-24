@@ -34,6 +34,20 @@ func (s *Service) GetPublicProfile(
 	return profile, nil
 }
 
+// get current logged-in user (for /me)
+func (s *Service) GetMe(ctx context.Context, userID string) (MeResponse, error) {
+	u, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return MeResponse{}, ErrNotFound
+	}
+
+	return MeResponse{
+		ID:        u.ID,
+		Username:  u.Username,
+		AvatarURL: u.AvatarURL,
+	}, nil
+}
+
 func (s *Service) UpdateEmail(
 	ctx context.Context,
 	userID string,
