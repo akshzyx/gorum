@@ -6,6 +6,7 @@ import (
 	"github.com/akshzyx/gorum/internal/api/handlers"
 	"github.com/akshzyx/gorum/internal/api/middlewares"
 	"github.com/akshzyx/gorum/internal/api/routes"
+	"github.com/akshzyx/gorum/internal/util"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -19,7 +20,10 @@ func NewRouter(
 
 	// basic health check endpoint
 	r.Get("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+		util.WriteJSON(w, http.StatusOK, map[string]string{
+			"status":  "ok",
+			"service": "gorum",
+		})
 	})
 
 	// API v1 routes
