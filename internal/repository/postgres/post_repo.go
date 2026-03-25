@@ -113,6 +113,13 @@ func (r *PostRepository) ListReplies(ctx context.Context, postID string) ([]*pos
 	return posts, nil
 }
 
+func (r *PostRepository) CountReplies(ctx context.Context, postID string) (int64, error) {
+	return r.q.CountReplies(ctx, pgtype.Text{
+		String: postID,
+		Valid:  true,
+	})
+}
+
 func (r *PostRepository) GetThread(ctx context.Context, rootID string) ([]*post.Post, error) {
 	rows, err := r.q.GetThread(ctx, rootID)
 	if err != nil {

@@ -103,6 +103,10 @@ func (s *Service) ListReplies(ctx context.Context, postID string) ([]*Post, erro
 	return s.repo.ListReplies(ctx, postID)
 }
 
+func (s *Service) GetRepliesCount(ctx context.Context, postID string) (int64, error) {
+	return s.repo.CountReplies(ctx, postID)
+}
+
 func (s *Service) GetThread(ctx context.Context, rootID string) ([]*Post, error) {
 	return s.repo.GetThread(ctx, rootID)
 }
@@ -131,8 +135,6 @@ func (s *Service) HasUserLiked(ctx context.Context, userID, postID string) (bool
 	return s.repo.HasUserLiked(ctx, userID, postID)
 }
 
-// Enrichment (optimized)
-
 func (s *Service) EnrichPosts(ctx context.Context, userID string, posts []*Post) ([]map[string]interface{}, error) {
 	postIDs := make([]string, 0, len(posts))
 	for _, p := range posts {
@@ -155,13 +157,16 @@ func (s *Service) EnrichPosts(ctx context.Context, userID string, posts []*Post)
 	resp := make([]map[string]interface{}, 0, len(posts))
 
 	for _, p := range posts {
+		replyCount, _ := s.repo.CountReplies(ctx, p.ID)
+
 		resp = append(resp, map[string]interface{}{
-			"id":         p.ID,
-			"user_id":    p.UserID,
-			"content":    p.Content,
-			"created_at": p.CreatedAt,
-			"likes":      likesMap[p.ID],
-			"liked":      likedMap[p.ID],
+			"id":          p.ID,
+			"user_id":     p.UserID,
+			"content":     p.Content,
+			"created_at":  p.CreatedAt,
+			"likes":       likesMap[p.ID],
+			"liked":       likedMap[p.ID],
+			"reply_count": replyCount,
 		})
 	}
 

@@ -17,11 +17,15 @@ WHERE id = $1 AND deleted_at IS NULL;
 SELECT id, user_id, content, created_at
 FROM posts
 WHERE deleted_at IS NULL
+AND parent_post_id IS NULL
 ORDER BY created_at DESC
 LIMIT $1;
 
-
--- Likes (basic)
+-- name: CountReplies :one
+SELECT COUNT(*)
+FROM posts
+WHERE root_post_id = $1
+AND deleted_at IS NULL;
 
 -- name: CreateLike :exec
 INSERT INTO post_likes (user_id, post_id)

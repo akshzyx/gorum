@@ -23,8 +23,21 @@ func (q *Queries) CountLikes(ctx context.Context, postID string) (int64, error) 
 	return count, err
 }
 
-const createLike = `-- name: CreateLike :exec
+const countReplies = `-- name: CountReplies :one
+SELECT COUNT(*)
+FROM posts
+WHERE root_post_id = $1
+AND deleted_at IS NULL
+`
 
+func (q *Queries) CountReplies(ctx context.Context, rootPostID pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countReplies, rootPostID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createLike = `-- name: CreateLike :exec
 INSERT INTO post_likes (user_id, post_id)
 VALUES ($1, $2)
 ON CONFLICT DO NOTHING
@@ -35,7 +48,6 @@ type CreateLikeParams struct {
 	PostID string `json:"post_id"`
 }
 
-// Likes (basic)
 func (q *Queries) CreateLike(ctx context.Context, arg CreateLikeParams) error {
 	_, err := q.db.Exec(ctx, createLike, arg.UserID, arg.PostID)
 	return err
@@ -210,6 +222,7 @@ const listLatestPosts = `-- name: ListLatestPosts :many
 SELECT id, user_id, content, created_at
 FROM posts
 WHERE deleted_at IS NULL
+AND parent_post_id IS NULL
 ORDER BY created_at DESC
 LIMIT $1
 `

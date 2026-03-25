@@ -13,6 +13,7 @@ type Repository interface {
 	GetPostForReply(ctx context.Context, id string) (*Post, error)
 	CreateReply(ctx context.Context, post *Post) error
 	ListReplies(ctx context.Context, postID string) ([]*Post, error)
+	CountReplies(ctx context.Context, postID string) (int64, error)
 	GetThread(ctx context.Context, rootID string) ([]*Post, error)
 
 	// Likes

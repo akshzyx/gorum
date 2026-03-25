@@ -250,10 +250,11 @@ func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 	resp := make([]post.ReplyResponse, 0, len(posts))
 	for _, p := range posts {
 		resp = append(resp, post.ReplyResponse{
-			ID:        p.ID,
-			UserID:    p.UserID,
-			Content:   p.Content,
-			CreatedAt: p.CreatedAt.Format(time.RFC3339),
+			ID:           p.ID,
+			UserID:       p.UserID,
+			Content:      p.Content,
+			CreatedAt:    p.CreatedAt.Format(time.RFC3339),
+			ParentPostID: p.ParentPostID,
 		})
 	}
 
