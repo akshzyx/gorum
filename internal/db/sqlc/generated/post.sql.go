@@ -456,18 +456,14 @@ SELECT id, user_id, content, created_at
 FROM posts
 WHERE deleted_at IS NULL
 AND parent_post_id IS NULL
-AND (
-    $1::timestamp IS NULL 
-    OR (created_at, id) < ($1, $2)
-)
-ORDER BY created_at DESC, id DESC
-LIMIT $3
+AND ($1::timestamp IS NULL OR created_at < $1)
+ORDER BY created_at DESC
+LIMIT $2
 `
 
 type ListLatestPostsWithCursorParams struct {
-	Column1   pgtype.Timestamp   `json:"column_1"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	Limit     int32              `json:"limit"`
+	Column1 pgtype.Timestamp `json:"column_1"`
+	Limit   int32            `json:"limit"`
 }
 
 type ListLatestPostsWithCursorRow struct {
@@ -478,7 +474,7 @@ type ListLatestPostsWithCursorRow struct {
 }
 
 func (q *Queries) ListLatestPostsWithCursor(ctx context.Context, arg ListLatestPostsWithCursorParams) ([]ListLatestPostsWithCursorRow, error) {
-	rows, err := q.db.Query(ctx, listLatestPostsWithCursor, arg.Column1, arg.CreatedAt, arg.Limit)
+	rows, err := q.db.Query(ctx, listLatestPostsWithCursor, arg.Column1, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
