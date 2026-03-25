@@ -18,7 +18,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	cfg := config.LoadConfig()
 
@@ -35,15 +35,15 @@ func main() {
 
 	fmt.Println("🌱 Seeding started...")
 
-	users := seedUsers(ctx, userRepo, queries)
-	posts := seedPosts(ctx, postRepo, users)
-	seedReplies(ctx, postRepo, users, posts) // 🔥 NEW
-	seedLikes(ctx, postRepo, users, posts)
+	users := seedUsers(ctx, userRepo, queries, r)
+	posts := seedPosts(ctx, postRepo, users, r)
+	seedReplies(ctx, postRepo, users, posts, r)
+	seedLikes(ctx, postRepo, users, posts, r)
 
 	fmt.Println("✅ Seeding complete!")
 }
 
-func seedUsers(ctx context.Context, repo *postgres.UserRepository, q *db.Queries) []string {
+func seedUsers(ctx context.Context, repo *postgres.UserRepository, q *db.Queries, r *rand.Rand) []string {
 	var ids []string
 
 	bios := []string{
@@ -78,7 +78,7 @@ func seedUsers(ctx context.Context, repo *postgres.UserRepository, q *db.Queries
 		}
 
 		// add bio + avatar
-		bio := bios[rand.Intn(len(bios))]
+		bio := bios[r.Intn(len(bios))]
 		avatar := fmt.Sprintf("https://i.pravatar.cc/150?u=%s", id)
 
 		err = repo.UpdateProfile(ctx, id, bio, avatar)
@@ -106,14 +106,14 @@ var samplePosts = []string{
 	"just deployed 🔥",
 }
 
-func seedPosts(ctx context.Context, repo *postgres.PostRepository, users []string) []string {
+func seedPosts(ctx context.Context, repo *postgres.PostRepository, users []string, r *rand.Rand) []string {
 	var ids []string
 
 	for i := 0; i < 120; i++ {
 		p := &post.Post{
 			ID:      uuid.New().String(),
-			UserID:  users[rand.Intn(len(users))],
-			Content: samplePosts[rand.Intn(len(samplePosts))],
+			UserID:  users[r.Intn(len(users))],
+			Content: samplePosts[r.Intn(len(samplePosts))],
 		}
 
 		err := repo.Create(ctx, p)
@@ -142,21 +142,21 @@ var sampleReplies = []string{
 	"🔥🔥🔥",
 }
 
-func seedReplies(ctx context.Context, repo *postgres.PostRepository, users, posts []string) {
+func seedReplies(ctx context.Context, repo *postgres.PostRepository, users, posts []string, r *rand.Rand) {
 	total := 0
 
 	for _, rootPostID := range posts {
 		// 70% of posts get replies
-		if rand.Intn(100) > 70 {
+		if r.Intn(100) > 70 {
 			continue
 		}
 
-		numReplies := rand.Intn(5) + 1
+		numReplies := r.Intn(5) + 1
 
 		for i := 0; i < numReplies; i++ {
 			replyID := uuid.New().String()
-			userID := users[rand.Intn(len(users))]
-			content := sampleReplies[rand.Intn(len(sampleReplies))]
+			userID := users[r.Intn(len(users))]
+			content := sampleReplies[r.Intn(len(sampleReplies))]
 
 			rootID := rootPostID
 			parentID := rootPostID
@@ -178,13 +178,13 @@ func seedReplies(ctx context.Context, repo *postgres.PostRepository, users, post
 			total++
 
 			// nested replies
-			if rand.Intn(100) < 40 {
-				nestedCount := rand.Intn(3) + 1
+			if r.Intn(100) < 40 {
+				nestedCount := r.Intn(3) + 1
 
 				for j := 0; j < nestedCount; j++ {
 					nestedID := uuid.New().String()
-					nestedUser := users[rand.Intn(len(users))]
-					nestedContent := sampleReplies[rand.Intn(len(sampleReplies))]
+					nestedUser := users[r.Intn(len(users))]
+					nestedContent := sampleReplies[r.Intn(len(sampleReplies))]
 
 					parent := replyID
 					root := rootPostID
@@ -212,14 +212,14 @@ func seedReplies(ctx context.Context, repo *postgres.PostRepository, users, post
 	fmt.Println("💬 replies created:", total)
 }
 
-func seedLikes(ctx context.Context, repo *postgres.PostRepository, users, posts []string) {
+func seedLikes(ctx context.Context, repo *postgres.PostRepository, users, posts []string, r *rand.Rand) {
 	total := 0
 
 	for _, userID := range users {
-		n := rand.Intn(10) + 5
+		n := r.Intn(10) + 5
 
 		for i := 0; i < n; i++ {
-			postID := posts[rand.Intn(len(posts))]
+			postID := posts[r.Intn(len(posts))]
 
 			err := repo.CreateLike(ctx, userID, postID)
 			if err == nil {
