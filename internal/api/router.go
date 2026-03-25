@@ -7,6 +7,7 @@ import (
 	"github.com/akshzyx/gorum/internal/api/middlewares"
 	"github.com/akshzyx/gorum/internal/api/routes"
 	"github.com/akshzyx/gorum/internal/util"
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -17,6 +18,12 @@ func NewRouter(
 	postHandler *handlers.PostHandler,
 ) *chi.Mux {
 	r := chi.NewRouter()
+
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middlewares.CORS)
 
 	// basic health check endpoint
 	r.Get("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {

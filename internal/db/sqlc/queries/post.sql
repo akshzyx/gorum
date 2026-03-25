@@ -75,3 +75,9 @@ AND parent_post_id IS NOT NULL
 AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2;
+
+-- name: GetRepliesCountByPostIDs :many
+SELECT parent_post_id AS post_id, COUNT(*) AS count
+FROM posts
+WHERE parent_post_id = ANY($1::text[])
+GROUP BY parent_post_id;

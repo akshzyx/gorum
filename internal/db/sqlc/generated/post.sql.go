@@ -261,6 +261,38 @@ func (q *Queries) GetRepliesByUser(ctx context.Context, arg GetRepliesByUserPara
 	return items, nil
 }
 
+const getRepliesCountByPostIDs = `-- name: GetRepliesCountByPostIDs :many
+SELECT parent_post_id AS post_id, COUNT(*) AS count
+FROM posts
+WHERE parent_post_id = ANY($1::text[])
+GROUP BY parent_post_id
+`
+
+type GetRepliesCountByPostIDsRow struct {
+	PostID pgtype.Text `json:"post_id"`
+	Count  int64       `json:"count"`
+}
+
+func (q *Queries) GetRepliesCountByPostIDs(ctx context.Context, dollar_1 []string) ([]GetRepliesCountByPostIDsRow, error) {
+	rows, err := q.db.Query(ctx, getRepliesCountByPostIDs, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRepliesCountByPostIDsRow
+	for rows.Next() {
+		var i GetRepliesCountByPostIDsRow
+		if err := rows.Scan(&i.PostID, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserLikedPosts = `-- name: GetUserLikedPosts :many
 SELECT post_id
 FROM post_likes

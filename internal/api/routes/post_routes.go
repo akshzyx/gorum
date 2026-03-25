@@ -10,12 +10,16 @@ func PostRoutes(h *handlers.PostHandler) chi.Router {
 	r := chi.NewRouter()
 
 	// Public routes
-	r.Get("/", h.ListLatest)
-	r.Get("/{id}", h.GetByID)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.OptionalAuth)
 
-	// Replies (public read)
-	r.Get("/{id}/replies", h.ListReplies)
-	r.Get("/{id}/thread", h.GetThread)
+		r.Get("/", h.ListLatest)
+		r.Get("/{id}", h.GetByID)
+
+		// Replies (public read)
+		r.Get("/{id}/replies", h.ListReplies)
+		r.Get("/{id}/thread", h.GetThread)
+	})
 
 	// Authenticated routes
 	r.Group(func(r chi.Router) {

@@ -120,6 +120,23 @@ func (r *PostRepository) CountReplies(ctx context.Context, postID string) (int64
 	})
 }
 
+// batch replies count (fixes N+1 problem)
+func (r *PostRepository) GetRepliesCountByPostIDs(ctx context.Context, postIDs []string) (map[string]int64, error) {
+	rows, err := r.q.GetRepliesCountByPostIDs(ctx, postIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]int64)
+	for _, row := range rows {
+		if row.PostID.Valid {
+			result[row.PostID.String] = row.Count
+		}
+	}
+
+	return result, nil
+}
+
 func (r *PostRepository) GetThread(ctx context.Context, rootID string) ([]*post.Post, error) {
 	rows, err := r.q.GetThread(ctx, rootID)
 	if err != nil {

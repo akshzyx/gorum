@@ -13,6 +13,32 @@ type contextKey string
 
 const UserIDKey contextKey = "user_id"
 
+// helper: extracts userID from Authorization header
+func extractUserFromHeader(r *http.Request) (string, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "", errors.New("missing authorization token")
+	}
+
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		return "", errors.New("invalid authorization header")
+	}
+
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+
+	claims, err := util.ValidateJWT(tokenStr)
+	if err != nil {
+		return "", err
+	}
+
+	userID, err := util.ExtractUserID(claims)
+	if err != nil {
+		return "", err
+	}
+
+	return userID, nil
+}
+
 // OptionalAuth attaches user to context if token is present.
 // If no token is provided, request continues as unauthenticated.
 func OptionalAuth(next http.Handler) http.Handler {
@@ -24,22 +50,9 @@ func OptionalAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			util.BadRequest(w, r, errors.New("invalid authorization header"))
-			return
-		}
-
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-
-		claims, err := util.ValidateJWT(tokenStr)
+		userID, err := extractUserFromHeader(r)
 		if err != nil {
 			// Token exists but is invalid → unauthorized
-			util.Unauthorized(w, r, err)
-			return
-		}
-
-		userID, err := util.ExtractUserID(claims)
-		if err != nil {
 			util.Unauthorized(w, r, err)
 			return
 		}
@@ -54,27 +67,7 @@ func OptionalAuth(next http.Handler) http.Handler {
 // Request is rejected if token is missing or invalid.
 func RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			// Missing token → reject immediately
-			util.Unauthorized(w, r, errors.New("missing authorization token"))
-			return
-		}
-
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			util.BadRequest(w, r, errors.New("invalid authorization header"))
-			return
-		}
-
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-
-		claims, err := util.ValidateJWT(tokenStr)
-		if err != nil {
-			util.Unauthorized(w, r, err)
-			return
-		}
-
-		userID, err := util.ExtractUserID(claims)
+		userID, err := extractUserFromHeader(r)
 		if err != nil {
 			util.Unauthorized(w, r, err)
 			return

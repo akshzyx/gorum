@@ -120,6 +120,12 @@ func (s *Service) LikePost(ctx context.Context, userID, postID string) error {
 		return ErrPostNotFound
 	}
 
+	// prevent duplicate likes (safety at service layer)
+	liked, err := s.repo.HasUserLiked(ctx, userID, postID)
+	if err == nil && liked {
+		return nil
+	}
+
 	return s.repo.CreateLike(ctx, userID, postID)
 }
 
@@ -154,11 +160,15 @@ func (s *Service) EnrichPosts(ctx context.Context, userID string, posts []*Post)
 		}
 	}
 
+	// batch replies count (optimized)
+	replyCountMap, err := s.repo.GetRepliesCountByPostIDs(ctx, postIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	resp := make([]map[string]interface{}, 0, len(posts))
 
 	for _, p := range posts {
-		replyCount, _ := s.repo.CountReplies(ctx, p.ID)
-
 		resp = append(resp, map[string]interface{}{
 			"id":          p.ID,
 			"user_id":     p.UserID,
@@ -166,7 +176,7 @@ func (s *Service) EnrichPosts(ctx context.Context, userID string, posts []*Post)
 			"created_at":  p.CreatedAt,
 			"likes":       likesMap[p.ID],
 			"liked":       likedMap[p.ID],
-			"reply_count": replyCount,
+			"reply_count": replyCountMap[p.ID],
 		})
 	}
 

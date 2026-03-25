@@ -152,12 +152,24 @@ func (h *PostHandler) LikePost(w http.ResponseWriter, r *http.Request) {
 
 	postID := chi.URLParam(r, "id")
 
+	// prevent duplicate likes
+	alreadyLiked, err := h.service.HasUserLiked(r.Context(), userID, postID)
+	if err == nil && alreadyLiked {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	if err := h.service.LikePost(r.Context(), userID, postID); err != nil {
 		util.InternalServerError(w, r, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	count, _ := h.service.GetLikesCount(r.Context(), postID)
+
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"liked": true,
+		"likes": count,
+	})
 }
 
 func (h *PostHandler) UnlikePost(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +186,12 @@ func (h *PostHandler) UnlikePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	count, _ := h.service.GetLikesCount(r.Context(), postID)
+
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"liked": false,
+		"likes": count,
+	})
 }
 
 // Replies

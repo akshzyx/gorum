@@ -76,7 +76,7 @@ func (s *Service) Signup(ctx context.Context, req SignupRequest) (SignupResponse
 
 	// 6. Send activation email
 	if err := s.emailSender.SendVerificationEmail(req.Email, token); err != nil {
-		return SignupResponse{}, err
+		println("email send failed:", err.Error())
 	}
 
 	return SignupResponse{
@@ -164,5 +164,9 @@ func (s *Service) ResendActivation(ctx context.Context, req ResendActivationRequ
 	}
 
 	// 5. Send email
-	return s.emailSender.SendVerificationEmail(req.Email, token)
+	if err := s.emailSender.SendVerificationEmail(req.Email, token); err != nil {
+		println("email resend failed:", err.Error())
+	}
+
+	return nil
 }
