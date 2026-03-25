@@ -106,3 +106,64 @@ func (s *Service) ListReplies(ctx context.Context, postID string) ([]*Post, erro
 func (s *Service) GetThread(ctx context.Context, rootID string) ([]*Post, error) {
 	return s.repo.GetThread(ctx, rootID)
 }
+
+// Likes (single ops)
+
+func (s *Service) LikePost(ctx context.Context, userID, postID string) error {
+	// make sure post exists
+	_, err := s.repo.GetByID(ctx, postID)
+	if err != nil {
+		return ErrPostNotFound
+	}
+
+	return s.repo.CreateLike(ctx, userID, postID)
+}
+
+func (s *Service) UnlikePost(ctx context.Context, userID, postID string) error {
+	return s.repo.DeleteLike(ctx, userID, postID)
+}
+
+func (s *Service) GetLikesCount(ctx context.Context, postID string) (int64, error) {
+	return s.repo.CountLikes(ctx, postID)
+}
+
+func (s *Service) HasUserLiked(ctx context.Context, userID, postID string) (bool, error) {
+	return s.repo.HasUserLiked(ctx, userID, postID)
+}
+
+// Enrichment (optimized)
+
+func (s *Service) EnrichPosts(ctx context.Context, userID string, posts []*Post) ([]map[string]interface{}, error) {
+	postIDs := make([]string, 0, len(posts))
+	for _, p := range posts {
+		postIDs = append(postIDs, p.ID)
+	}
+
+	likesMap, err := s.repo.GetLikesCountByPostIDs(ctx, postIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	likedMap := map[string]bool{}
+	if userID != "" {
+		likedMap, err = s.repo.GetUserLikedPosts(ctx, userID, postIDs)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resp := make([]map[string]interface{}, 0, len(posts))
+
+	for _, p := range posts {
+		resp = append(resp, map[string]interface{}{
+			"id":         p.ID,
+			"user_id":    p.UserID,
+			"content":    p.Content,
+			"created_at": p.CreatedAt,
+			"likes":      likesMap[p.ID],
+			"liked":      likedMap[p.ID],
+		})
+	}
+
+	return resp, nil
+}

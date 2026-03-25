@@ -53,9 +53,10 @@ func (r *PostRepository) ListLatest(ctx context.Context, limit int32) ([]*post.P
 	posts := make([]*post.Post, 0, len(rows))
 	for _, row := range rows {
 		posts = append(posts, &post.Post{
-			ID:      row.ID,
-			UserID:  row.UserID,
-			Content: row.Content,
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
 		})
 	}
 
@@ -135,4 +136,61 @@ func (r *PostRepository) GetThread(ctx context.Context, rootID string) ([]*post.
 	}
 
 	return posts, nil
+}
+
+// Like system
+func (r *PostRepository) CreateLike(ctx context.Context, userID, postID string) error {
+	return r.q.CreateLike(ctx, db.CreateLikeParams{
+		UserID: userID,
+		PostID: postID,
+	})
+}
+
+func (r *PostRepository) DeleteLike(ctx context.Context, userID, postID string) error {
+	return r.q.DeleteLike(ctx, db.DeleteLikeParams{
+		UserID: userID,
+		PostID: postID,
+	})
+}
+
+func (r *PostRepository) CountLikes(ctx context.Context, postID string) (int64, error) {
+	return r.q.CountLikes(ctx, postID)
+}
+
+func (r *PostRepository) HasUserLiked(ctx context.Context, userID, postID string) (bool, error) {
+	return r.q.HasUserLikedPost(ctx, db.HasUserLikedPostParams{
+		UserID: userID,
+		PostID: postID,
+	})
+}
+
+func (r *PostRepository) GetLikesCountByPostIDs(ctx context.Context, postIDs []string) (map[string]int64, error) {
+	rows, err := r.q.GetLikesCountByPostIDs(ctx, postIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]int64)
+	for _, row := range rows {
+		result[row.PostID] = row.Count
+	}
+
+	return result, nil
+}
+
+func (r *PostRepository) GetUserLikedPosts(ctx context.Context, userID string, postIDs []string) (map[string]bool, error) {
+	rows, err := r.q.GetUserLikedPosts(ctx, db.GetUserLikedPostsParams{
+		UserID:  userID,
+		PostIds: postIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]bool)
+	for _, postID := range rows {
+		result[postID] = true
+	}
+
+	return result, nil
 }

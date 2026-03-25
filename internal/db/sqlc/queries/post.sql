@@ -19,3 +19,37 @@ FROM posts
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $1;
+
+
+-- Likes (basic)
+
+-- name: CreateLike :exec
+INSERT INTO post_likes (user_id, post_id)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING;
+
+-- name: DeleteLike :exec
+DELETE FROM post_likes
+WHERE user_id = $1 AND post_id = $2;
+
+-- name: CountLikes :one
+SELECT COUNT(*) FROM post_likes
+WHERE post_id = $1;
+
+-- name: HasUserLikedPost :one
+SELECT EXISTS (
+    SELECT 1 FROM post_likes
+    WHERE user_id = $1 AND post_id = $2
+);
+
+-- name: GetLikesCountByPostIDs :many
+SELECT post_id, COUNT(*) AS count
+FROM post_likes
+WHERE post_id = ANY($1::text[])
+GROUP BY post_id;
+
+-- name: GetUserLikedPosts :many
+SELECT post_id
+FROM post_likes
+WHERE user_id = $1
+AND post_id = ANY(sqlc.arg(post_ids)::text[]);

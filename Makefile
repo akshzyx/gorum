@@ -12,6 +12,9 @@ help:
 	@echo "  make migrate-up                # Run all pending migrations"
 	@echo "  make migrate-down              # Rollback last migration"
 	@echo "  make migrate create_name       # Create a new migration"
+	@echo "  make reset                     # Reset database (drop + migrate)"
+	@echo "  make seed                      # Seed database with dummy data"
+	@echo "  make dev                       # Reset + seed (full fresh setup)"
 
 # Run migrations up
 migrate-up:
@@ -28,6 +31,19 @@ migrate:
 		exit 1; \
 	fi
 	migrate create -ext sql -dir $(MIGRATIONS_DIR) -seq $(word 2,$(MAKECMDGOALS))
+
+# Reset database (drop schema + run migrations)
+reset:
+	./scripts/reset_db.sh
+
+# Seed database (run Go seeder)
+seed:
+	go run scripts/seed.go
+
+# Full dev setup (clean DB + seed data)
+dev:
+	$(MAKE) reset
+	$(MAKE) seed
 
 # Prevent Make from thinking the second word is a separate target
 %:
