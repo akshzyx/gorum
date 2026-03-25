@@ -75,3 +75,41 @@ AND parent_post_id IS NOT NULL
 AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2;
+
+-- name: ListLatestPostsWithCursor :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE deleted_at IS NULL
+AND parent_post_id IS NULL
+AND ($1::timestamp IS NULL OR created_at < $1)
+ORDER BY created_at DESC
+LIMIT $2;
+
+-- name: ListRepliesWithCursor :many
+SELECT id, user_id, content, parent_post_id, root_post_id, created_at
+FROM posts
+WHERE root_post_id = $1
+AND deleted_at IS NULL
+AND ($2::timestamp IS NULL OR created_at > $2)
+ORDER BY created_at ASC
+LIMIT $3;
+
+-- name: GetPostsByUserWithCursor :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NULL
+AND deleted_at IS NULL
+AND ($2::timestamp IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3;
+
+-- name: GetRepliesByUserWithCursor :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NOT NULL
+AND deleted_at IS NULL
+AND ($2::timestamp IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3;

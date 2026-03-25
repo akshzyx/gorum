@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/akshzyx/gorum/internal/api/middlewares"
 	"github.com/akshzyx/gorum/internal/domain/post"
@@ -54,53 +56,116 @@ func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) GetUserPosts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	username := chi.URLParam(r, "username")
 
-	u, err := h.service.GetPublicProfile(r.Context(), username)
+	// get user (you already have this logic)
+	user, err := h.service.GetPublicProfile(ctx, username)
 	if err != nil {
 		util.NotFound(w, r)
 		return
 	}
 
-	posts, err := h.postService.GetUserPosts(r.Context(), u.ID, 20)
+	limit := int32(20)
+
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil {
+			limit = int32(v)
+		}
+	}
+
+	// parse cursor
+	var cursor *time.Time
+	cursorStr := r.URL.Query().Get("cursor")
+	if cursorStr != "" {
+		if t, err := time.Parse(time.RFC3339, cursorStr); err == nil {
+			cursor = &t
+		}
+	}
+
+	viewerID := middlewares.GetUserID(ctx)
+
+	result, err := h.postService.GetUserPosts(ctx, user.ID, cursor, limit, viewerID)
 	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
 	}
 
-	userID := middlewares.GetUserID(r.Context())
-
-	resp, err := h.postService.EnrichPosts(r.Context(), userID, posts)
-	if err != nil {
-		util.InternalServerError(w, r, err)
-		return
+	// format created_at
+	for _, p := range result.Data {
+		if t, ok := p["created_at"].(time.Time); ok {
+			p["created_at"] = t.Format(time.RFC3339)
+		}
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	// format next_cursor
+	var nextCursor *string
+	if result.NextCursor != nil {
+		s := result.NextCursor.Format(time.RFC3339)
+		nextCursor = &s
+	}
+
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":        result.Data,
+		"next_cursor": nextCursor,
+		"has_more":    result.HasMore,
+	})
 }
 
 func (h *UserHandler) GetUserReplies(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	username := chi.URLParam(r, "username")
 
-	u, err := h.service.GetPublicProfile(r.Context(), username)
+	user, err := h.service.GetPublicProfile(ctx, username)
 	if err != nil {
 		util.NotFound(w, r)
 		return
 	}
 
-	posts, err := h.postService.GetUserReplies(r.Context(), u.ID, 20)
+	limit := int32(20)
+
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil {
+			limit = int32(v)
+		}
+	}
+
+	// parse cursor
+	var cursor *time.Time
+	cursorStr := r.URL.Query().Get("cursor")
+	if cursorStr != "" {
+		if t, err := time.Parse(time.RFC3339, cursorStr); err == nil {
+			cursor = &t
+		}
+	}
+
+	viewerID := middlewares.GetUserID(ctx)
+
+	result, err := h.postService.GetUserReplies(ctx, user.ID, cursor, limit, viewerID)
 	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
 	}
 
-	userID := middlewares.GetUserID(r.Context())
-
-	resp, err := h.postService.EnrichPosts(r.Context(), userID, posts)
-	if err != nil {
-		util.InternalServerError(w, r, err)
-		return
+	// format created_at
+	for _, p := range result.Data {
+		if t, ok := p["created_at"].(time.Time); ok {
+			p["created_at"] = t.Format(time.RFC3339)
+		}
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	// format next_cursor
+	var nextCursor *string
+	if result.NextCursor != nil {
+		s := result.NextCursor.Format(time.RFC3339)
+		nextCursor = &s
+	}
+
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":        result.Data,
+		"next_cursor": nextCursor,
+		"has_more":    result.HasMore,
+	})
 }

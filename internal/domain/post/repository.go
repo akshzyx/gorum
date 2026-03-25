@@ -1,6 +1,11 @@
 package post
 
-import "context"
+import (
+	"context"
+	"time"
+
+	db "github.com/akshzyx/gorum/internal/db/sqlc/generated"
+)
 
 type Repository interface {
 	// Posts
@@ -8,6 +13,8 @@ type Repository interface {
 	GetByID(ctx context.Context, id string) (*Post, error)
 	Delete(ctx context.Context, postID string) error
 	ListLatest(ctx context.Context, limit int32) ([]*Post, error)
+	ListLatestWithCursor(ctx context.Context, cursor *time.Time, limit int32) ([]db.ListLatestPostsWithCursorRow, error)
+	GetPostsByUserWithCursor(ctx context.Context, userID string, cursor *time.Time, limit int32) ([]db.GetPostsByUserWithCursorRow, error)
 
 	// Replies
 	GetPostForReply(ctx context.Context, id string) (*Post, error)
@@ -29,4 +36,6 @@ type Repository interface {
 	// User profile posts and replies
 	GetPostsByUser(ctx context.Context, userID string, limit int32) ([]*Post, error)
 	GetRepliesByUser(ctx context.Context, userID string, limit int32) ([]*Post, error)
+	ListRepliesWithCursor(ctx context.Context, rootID string, cursor *time.Time, limit int32) ([]db.ListRepliesWithCursorRow, error)
+	GetRepliesByUserWithCursor(ctx context.Context, userID string, cursor *time.Time, limit int32) ([]db.GetRepliesByUserWithCursorRow, error)
 }

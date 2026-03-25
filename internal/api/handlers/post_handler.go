@@ -110,6 +110,8 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PostHandler) ListLatest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	limit := int32(20)
 
 	if q := r.URL.Query().Get("limit"); q != "" {
@@ -118,28 +120,43 @@ func (h *PostHandler) ListLatest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	posts, err := h.service.ListLatest(r.Context(), limit)
+	// parse cursor
+	var cursor *time.Time
+	cursorStr := r.URL.Query().Get("cursor")
+	if cursorStr != "" {
+		t, err := time.Parse(time.RFC3339, cursorStr)
+		if err == nil {
+			cursor = &t
+		}
+	}
+
+	userID := middlewares.GetUserID(ctx)
+
+	result, err := h.service.ListLatest(ctx, userID, cursor, limit)
 	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
 	}
 
-	userID := middlewares.GetUserID(r.Context())
-
-	resp, err := h.service.EnrichPosts(r.Context(), userID, posts)
-	if err != nil {
-		util.InternalServerError(w, r, err)
-		return
-	}
-
-	// format created_at properly
-	for _, p := range resp {
+	// format created_at inside data
+	for _, p := range result.Data {
 		if t, ok := p["created_at"].(time.Time); ok {
 			p["created_at"] = t.Format(time.RFC3339)
 		}
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	// format next_cursor
+	var nextCursor *string
+	if result.NextCursor != nil {
+		s := result.NextCursor.Format(time.RFC3339)
+		nextCursor = &s
+	}
+
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":        result.Data,
+		"next_cursor": nextCursor,
+		"has_more":    result.HasMore,
+	})
 }
 
 // Like handlers
@@ -217,25 +234,54 @@ func (h *PostHandler) Reply(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PostHandler) ListReplies(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	postID := chi.URLParam(r, "id")
 
-	posts, err := h.service.ListReplies(r.Context(), postID)
+	limit := int32(20)
+
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil {
+			limit = int32(v)
+		}
+	}
+
+	// parse cursor
+	var cursor *time.Time
+	cursorStr := r.URL.Query().Get("cursor")
+	if cursorStr != "" {
+		if t, err := time.Parse(time.RFC3339, cursorStr); err == nil {
+			cursor = &t
+		}
+	}
+
+	userID := middlewares.GetUserID(ctx)
+
+	result, err := h.service.ListReplies(ctx, userID, postID, cursor, limit)
 	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
 	}
 
-	resp := make([]post.ReplyResponse, 0, len(posts))
-	for _, p := range posts {
-		resp = append(resp, post.ReplyResponse{
-			ID:        p.ID,
-			UserID:    p.UserID,
-			Content:   p.Content,
-			CreatedAt: p.CreatedAt.Format(time.RFC3339),
-		})
+	// format created_at
+	for _, p := range result.Data {
+		if t, ok := p["created_at"].(time.Time); ok {
+			p["created_at"] = t.Format(time.RFC3339)
+		}
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	// format cursor
+	var nextCursor *string
+	if result.NextCursor != nil {
+		s := result.NextCursor.Format(time.RFC3339)
+		nextCursor = &s
+	}
+
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":        result.Data,
+		"next_cursor": nextCursor,
+		"has_more":    result.HasMore,
+	})
 }
 
 func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {

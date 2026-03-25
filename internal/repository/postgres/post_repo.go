@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	db "github.com/akshzyx/gorum/internal/db/sqlc/generated"
 	"github.com/akshzyx/gorum/internal/domain/post"
@@ -244,4 +245,109 @@ func (r *PostRepository) GetRepliesByUser(ctx context.Context, userID string, li
 	}
 
 	return posts, nil
+}
+
+func (r *PostRepository) ListLatestWithCursor(
+	ctx context.Context,
+	cursor *time.Time,
+	limit int32,
+) ([]db.ListLatestPostsWithCursorRow, error) {
+	var pgCursor pgtype.Timestamp
+
+	if cursor != nil {
+		pgCursor = pgtype.Timestamp{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		pgCursor = pgtype.Timestamp{
+			Valid: false,
+		}
+	}
+
+	return r.q.ListLatestPostsWithCursor(ctx, db.ListLatestPostsWithCursorParams{
+		Column1: pgCursor,
+		Limit:   limit,
+	})
+}
+
+func (r *PostRepository) ListRepliesWithCursor(
+	ctx context.Context,
+	rootID string,
+	cursor *time.Time,
+	limit int32,
+) ([]db.ListRepliesWithCursorRow, error) {
+	var pgCursor pgtype.Timestamp
+
+	if cursor != nil {
+		pgCursor = pgtype.Timestamp{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		pgCursor = pgtype.Timestamp{
+			Valid: false,
+		}
+	}
+
+	return r.q.ListRepliesWithCursor(ctx, db.ListRepliesWithCursorParams{
+		RootPostID: pgtype.Text{
+			String: rootID,
+			Valid:  true,
+		},
+		Column2: pgCursor,
+		Limit:   limit,
+	})
+}
+
+func (r *PostRepository) GetPostsByUserWithCursor(
+	ctx context.Context,
+	userID string,
+	cursor *time.Time,
+	limit int32,
+) ([]db.GetPostsByUserWithCursorRow, error) {
+	var pgCursor pgtype.Timestamp
+
+	if cursor != nil {
+		pgCursor = pgtype.Timestamp{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		pgCursor = pgtype.Timestamp{
+			Valid: false,
+		}
+	}
+
+	return r.q.GetPostsByUserWithCursor(ctx, db.GetPostsByUserWithCursorParams{
+		UserID:  userID,
+		Column2: pgCursor,
+		Limit:   limit,
+	})
+}
+
+func (r *PostRepository) GetRepliesByUserWithCursor(
+	ctx context.Context,
+	userID string,
+	cursor *time.Time,
+	limit int32,
+) ([]db.GetRepliesByUserWithCursorRow, error) {
+	var pgCursor pgtype.Timestamp
+
+	if cursor != nil {
+		pgCursor = pgtype.Timestamp{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		pgCursor = pgtype.Timestamp{
+			Valid: false,
+		}
+	}
+
+	return r.q.GetRepliesByUserWithCursor(ctx, db.GetRepliesByUserWithCursorParams{
+		UserID:  userID,
+		Column2: pgCursor,
+		Limit:   limit,
+	})
 }

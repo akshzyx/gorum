@@ -3,6 +3,7 @@ package post
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -64,8 +65,47 @@ func (s *Service) Delete(ctx context.Context, postID, userID string) error {
 	return nil
 }
 
-func (s *Service) ListLatest(ctx context.Context, limit int32) ([]*Post, error) {
-	return s.repo.ListLatest(ctx, limit)
+func (s *Service) ListLatest(
+	ctx context.Context,
+	userID string,
+	cursor *time.Time,
+	limit int32,
+) (*PaginatedPosts, error) {
+	rows, err := s.repo.ListLatestWithCursor(ctx, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	posts := make([]*Post, 0, len(rows))
+	for _, r := range rows {
+		posts = append(posts, &Post{
+			ID:        r.ID,
+			UserID:    r.UserID,
+			Content:   r.Content,
+			CreatedAt: r.CreatedAt.Time,
+		})
+	}
+
+	// enrich posts (likes, liked, reply_count)
+	enriched, err := s.EnrichPosts(ctx, userID, posts)
+	if err != nil {
+		return nil, err
+	}
+
+	// next cursor
+	var nextCursor *time.Time
+	if len(posts) > 0 {
+		last := posts[len(posts)-1]
+		nextCursor = &last.CreatedAt
+	}
+
+	hasMore := len(posts) == int(limit)
+
+	return &PaginatedPosts{
+		Data:       enriched,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
 }
 
 func (s *Service) Reply(ctx context.Context, userID string, parentID string, req *CreateReplyRequest) (string, error) {
@@ -99,8 +139,58 @@ func (s *Service) Reply(ctx context.Context, userID string, parentID string, req
 	return reply.ID, nil
 }
 
-func (s *Service) ListReplies(ctx context.Context, postID string) ([]*Post, error) {
-	return s.repo.ListReplies(ctx, postID)
+func (s *Service) ListReplies(
+	ctx context.Context,
+	userID string,
+	postID string,
+	cursor *time.Time,
+	limit int32,
+) (*PaginatedPosts, error) {
+	rows, err := s.repo.ListRepliesWithCursor(ctx, postID, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	posts := make([]*Post, 0, len(rows))
+	for _, r := range rows {
+		var parentID *string
+		if r.ParentPostID.Valid {
+			parentID = &r.ParentPostID.String
+		}
+
+		var rootID *string
+		if r.RootPostID.Valid {
+			rootID = &r.RootPostID.String
+		}
+
+		posts = append(posts, &Post{
+			ID:           r.ID,
+			UserID:       r.UserID,
+			Content:      r.Content,
+			ParentPostID: parentID,
+			RootPostID:   rootID,
+			CreatedAt:    r.CreatedAt.Time,
+		})
+	}
+
+	enriched, err := s.EnrichPosts(ctx, userID, posts)
+	if err != nil {
+		return nil, err
+	}
+
+	var nextCursor *time.Time
+	if len(posts) > 0 {
+		last := posts[len(posts)-1]
+		nextCursor = &last.CreatedAt
+	}
+
+	hasMore := len(posts) == int(limit)
+
+	return &PaginatedPosts{
+		Data:       enriched,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
 }
 
 func (s *Service) GetRepliesCount(ctx context.Context, postID string) (int64, error) {
@@ -173,10 +263,88 @@ func (s *Service) EnrichPosts(ctx context.Context, userID string, posts []*Post)
 	return resp, nil
 }
 
-func (s *Service) GetUserPosts(ctx context.Context, userID string, limit int32) ([]*Post, error) {
-	return s.repo.GetPostsByUser(ctx, userID, limit)
+func (s *Service) GetUserPosts(
+	ctx context.Context,
+	userID string,
+	cursor *time.Time,
+	limit int32,
+	viewerID string,
+) (*PaginatedPosts, error) {
+	rows, err := s.repo.GetPostsByUserWithCursor(ctx, userID, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	posts := make([]*Post, 0, len(rows))
+	for _, r := range rows {
+		posts = append(posts, &Post{
+			ID:        r.ID,
+			UserID:    r.UserID,
+			Content:   r.Content,
+			CreatedAt: r.CreatedAt.Time,
+		})
+	}
+
+	// enrich (likes, liked, reply_count)
+	enriched, err := s.EnrichPosts(ctx, viewerID, posts)
+	if err != nil {
+		return nil, err
+	}
+
+	// next cursor
+	var nextCursor *time.Time
+	if len(posts) > 0 {
+		last := posts[len(posts)-1]
+		nextCursor = &last.CreatedAt
+	}
+
+	hasMore := len(posts) == int(limit)
+
+	return &PaginatedPosts{
+		Data:       enriched,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
 }
 
-func (s *Service) GetUserReplies(ctx context.Context, userID string, limit int32) ([]*Post, error) {
-	return s.repo.GetRepliesByUser(ctx, userID, limit)
+func (s *Service) GetUserReplies(
+	ctx context.Context,
+	userID string,
+	cursor *time.Time,
+	limit int32,
+	viewerID string,
+) (*PaginatedPosts, error) {
+	rows, err := s.repo.GetRepliesByUserWithCursor(ctx, userID, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	posts := make([]*Post, 0, len(rows))
+	for _, r := range rows {
+		posts = append(posts, &Post{
+			ID:        r.ID,
+			UserID:    r.UserID,
+			Content:   r.Content,
+			CreatedAt: r.CreatedAt.Time,
+		})
+	}
+
+	enriched, err := s.EnrichPosts(ctx, viewerID, posts)
+	if err != nil {
+		return nil, err
+	}
+
+	var nextCursor *time.Time
+	if len(posts) > 0 {
+		last := posts[len(posts)-1]
+		nextCursor = &last.CreatedAt
+	}
+
+	hasMore := len(posts) == int(limit)
+
+	return &PaginatedPosts{
+		Data:       enriched,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
 }
