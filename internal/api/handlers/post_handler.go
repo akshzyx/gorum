@@ -20,8 +20,8 @@ func NewPostHandler(service *post.Service) *PostHandler {
 }
 
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
-	if !ok {
+	userID := middlewares.GetUserID(r.Context())
+	if userID == "" {
 		util.Unauthorized(w, r, nil)
 		return
 	}
@@ -60,17 +60,33 @@ func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.WriteJSON(w, http.StatusOK, post.PublicPostResponse{
-		ID:        p.ID,
-		UserID:    p.UserID,
-		Content:   p.Content,
-		CreatedAt: p.CreatedAt.Format(time.RFC3339),
+	userID := middlewares.GetUserID(r.Context())
+
+	liked := false
+	if userID != "" {
+		if l, err := h.service.HasUserLiked(r.Context(), userID, p.ID); err == nil {
+			liked = l
+		}
+	}
+
+	count := int64(0)
+	if c, err := h.service.GetLikesCount(r.Context(), p.ID); err == nil {
+		count = c
+	}
+
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"id":         p.ID,
+		"user_id":    p.UserID,
+		"content":    p.Content,
+		"created_at": p.CreatedAt.Format(time.RFC3339),
+		"likes":      count,
+		"liked":      liked,
 	})
 }
 
 func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
-	if !ok {
+	userID := middlewares.GetUserID(r.Context())
+	if userID == "" {
 		util.Unauthorized(w, r, nil)
 		return
 	}
@@ -108,22 +124,63 @@ func (h *PostHandler) ListLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := make([]post.PublicPostResponse, 0, len(posts))
-	for _, p := range posts {
-		resp = append(resp, post.PublicPostResponse{
-			ID:        p.ID,
-			UserID:    p.UserID,
-			Content:   p.Content,
-			CreatedAt: p.CreatedAt.Format(time.RFC3339),
-		})
+	userID := middlewares.GetUserID(r.Context())
+
+	resp, err := h.service.EnrichPosts(r.Context(), userID, posts)
+	if err != nil {
+		util.InternalServerError(w, r, err)
+		return
+	}
+
+	// format created_at properly
+	for _, p := range resp {
+		if t, ok := p["created_at"].(time.Time); ok {
+			p["created_at"] = t.Format(time.RFC3339)
+		}
 	}
 
 	util.WriteJSON(w, http.StatusOK, resp)
 }
 
+// Like handlers
+func (h *PostHandler) LikePost(w http.ResponseWriter, r *http.Request) {
+	userID := middlewares.GetUserID(r.Context())
+	if userID == "" {
+		util.Unauthorized(w, r, nil)
+		return
+	}
+
+	postID := chi.URLParam(r, "id")
+
+	if err := h.service.LikePost(r.Context(), userID, postID); err != nil {
+		util.InternalServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *PostHandler) UnlikePost(w http.ResponseWriter, r *http.Request) {
+	userID := middlewares.GetUserID(r.Context())
+	if userID == "" {
+		util.Unauthorized(w, r, nil)
+		return
+	}
+
+	postID := chi.URLParam(r, "id")
+
+	if err := h.service.UnlikePost(r.Context(), userID, postID); err != nil {
+		util.InternalServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Replies
 func (h *PostHandler) Reply(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
-	if !ok {
+	userID := middlewares.GetUserID(r.Context())
+	if userID == "" {
 		util.Unauthorized(w, r, nil)
 		return
 	}
@@ -193,10 +250,11 @@ func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 	resp := make([]post.ReplyResponse, 0, len(posts))
 	for _, p := range posts {
 		resp = append(resp, post.ReplyResponse{
-			ID:        p.ID,
-			UserID:    p.UserID,
-			Content:   p.Content,
-			CreatedAt: p.CreatedAt.Format(time.RFC3339),
+			ID:           p.ID,
+			UserID:       p.UserID,
+			Content:      p.Content,
+			CreatedAt:    p.CreatedAt.Format(time.RFC3339),
+			ParentPostID: p.ParentPostID,
 		})
 	}
 

@@ -5,6 +5,8 @@ import "time"
 type PublicProfileResponse struct {
 	ID        string    `json:"id"`
 	Username  string    `json:"username"`
+	Bio       *string   `json:"bio,omitempty"`
+	AvatarURL *string   `json:"avatar_url,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 

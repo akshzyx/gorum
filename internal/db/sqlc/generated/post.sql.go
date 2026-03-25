@@ -11,6 +11,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countLikes = `-- name: CountLikes :one
+SELECT COUNT(*) FROM post_likes
+WHERE post_id = $1
+`
+
+func (q *Queries) CountLikes(ctx context.Context, postID string) (int64, error) {
+	row := q.db.QueryRow(ctx, countLikes, postID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countReplies = `-- name: CountReplies :one
+SELECT COUNT(*)
+FROM posts
+WHERE root_post_id = $1
+AND deleted_at IS NULL
+`
+
+func (q *Queries) CountReplies(ctx context.Context, rootPostID pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countReplies, rootPostID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createLike = `-- name: CreateLike :exec
+INSERT INTO post_likes (user_id, post_id)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING
+`
+
+type CreateLikeParams struct {
+	UserID string `json:"user_id"`
+	PostID string `json:"post_id"`
+}
+
+func (q *Queries) CreateLike(ctx context.Context, arg CreateLikeParams) error {
+	_, err := q.db.Exec(ctx, createLike, arg.UserID, arg.PostID)
+	return err
+}
+
 const createPost = `-- name: CreatePost :one
 INSERT INTO posts (id, user_id, content)
 VALUES ($1, $2, $3)
@@ -42,6 +84,21 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (CreateP
 	return i, err
 }
 
+const deleteLike = `-- name: DeleteLike :exec
+DELETE FROM post_likes
+WHERE user_id = $1 AND post_id = $2
+`
+
+type DeleteLikeParams struct {
+	UserID string `json:"user_id"`
+	PostID string `json:"post_id"`
+}
+
+func (q *Queries) DeleteLike(ctx context.Context, arg DeleteLikeParams) error {
+	_, err := q.db.Exec(ctx, deleteLike, arg.UserID, arg.PostID)
+	return err
+}
+
 const deletePostByID = `-- name: DeletePostByID :exec
 UPDATE posts
 SET deleted_at = now()
@@ -51,6 +108,38 @@ WHERE id = $1 AND deleted_at IS NULL
 func (q *Queries) DeletePostByID(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, deletePostByID, id)
 	return err
+}
+
+const getLikesCountByPostIDs = `-- name: GetLikesCountByPostIDs :many
+SELECT post_id, COUNT(*) AS count
+FROM post_likes
+WHERE post_id = ANY($1::text[])
+GROUP BY post_id
+`
+
+type GetLikesCountByPostIDsRow struct {
+	PostID string `json:"post_id"`
+	Count  int64  `json:"count"`
+}
+
+func (q *Queries) GetLikesCountByPostIDs(ctx context.Context, dollar_1 []string) ([]GetLikesCountByPostIDsRow, error) {
+	rows, err := q.db.Query(ctx, getLikesCountByPostIDs, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetLikesCountByPostIDsRow
+	for rows.Next() {
+		var i GetLikesCountByPostIDsRow
+		if err := rows.Scan(&i.PostID, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getPostByID = `-- name: GetPostByID :one
@@ -78,10 +167,156 @@ func (q *Queries) GetPostByID(ctx context.Context, id string) (GetPostByIDRow, e
 	return i, err
 }
 
+const getPostsByUser = `-- name: GetPostsByUser :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NULL
+AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $2
+`
+
+type GetPostsByUserParams struct {
+	UserID string `json:"user_id"`
+	Limit  int32  `json:"limit"`
+}
+
+type GetPostsByUserRow struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) ([]GetPostsByUserRow, error) {
+	rows, err := q.db.Query(ctx, getPostsByUser, arg.UserID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsByUserRow
+	for rows.Next() {
+		var i GetPostsByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRepliesByUser = `-- name: GetRepliesByUser :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NOT NULL
+AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $2
+`
+
+type GetRepliesByUserParams struct {
+	UserID string `json:"user_id"`
+	Limit  int32  `json:"limit"`
+}
+
+type GetRepliesByUserRow struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetRepliesByUser(ctx context.Context, arg GetRepliesByUserParams) ([]GetRepliesByUserRow, error) {
+	rows, err := q.db.Query(ctx, getRepliesByUser, arg.UserID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRepliesByUserRow
+	for rows.Next() {
+		var i GetRepliesByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUserLikedPosts = `-- name: GetUserLikedPosts :many
+SELECT post_id
+FROM post_likes
+WHERE user_id = $1
+AND post_id = ANY($2::text[])
+`
+
+type GetUserLikedPostsParams struct {
+	UserID  string   `json:"user_id"`
+	PostIds []string `json:"post_ids"`
+}
+
+func (q *Queries) GetUserLikedPosts(ctx context.Context, arg GetUserLikedPostsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, getUserLikedPosts, arg.UserID, arg.PostIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var post_id string
+		if err := rows.Scan(&post_id); err != nil {
+			return nil, err
+		}
+		items = append(items, post_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const hasUserLikedPost = `-- name: HasUserLikedPost :one
+SELECT EXISTS (
+    SELECT 1 FROM post_likes
+    WHERE user_id = $1 AND post_id = $2
+)
+`
+
+type HasUserLikedPostParams struct {
+	UserID string `json:"user_id"`
+	PostID string `json:"post_id"`
+}
+
+func (q *Queries) HasUserLikedPost(ctx context.Context, arg HasUserLikedPostParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasUserLikedPost, arg.UserID, arg.PostID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listLatestPosts = `-- name: ListLatestPosts :many
 SELECT id, user_id, content, created_at
 FROM posts
 WHERE deleted_at IS NULL
+AND parent_post_id IS NULL
 ORDER BY created_at DESC
 LIMIT $1
 `

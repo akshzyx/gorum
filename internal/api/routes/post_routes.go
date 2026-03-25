@@ -26,6 +26,10 @@ func PostRoutes(h *handlers.PostHandler) chi.Router {
 
 		// Reply to a post
 		r.Post("/{id}/reply", h.Reply)
+
+		// Like system
+		r.Post("/{id}/like", h.LikePost)
+		r.Delete("/{id}/like", h.UnlikePost)
 	})
 
 	return r

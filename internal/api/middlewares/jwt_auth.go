@@ -85,3 +85,12 @@ func RequireAuth(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+// GetUserID extracts user_id from context safely
+func GetUserID(ctx context.Context) string {
+	userID, ok := ctx.Value(UserIDKey).(string)
+	if !ok {
+		return ""
+	}
+	return userID
+}

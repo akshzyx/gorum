@@ -26,6 +26,12 @@ type Post struct {
 	RootPostID   pgtype.Text        `json:"root_post_id"`
 }
 
+type PostLike struct {
+	UserID    string           `json:"user_id"`
+	PostID    string           `json:"post_id"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+}
+
 type User struct {
 	ID           string           `json:"id"`
 	Username     string           `json:"username"`
