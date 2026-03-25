@@ -23,7 +23,7 @@ SET is_verified = TRUE
 WHERE id = $1;
 
 -- name: GetPublicProfileByUsername :one
-SELECT id, username, created_at
+SELECT id, username, bio, avatar_url, created_at
 FROM users
 WHERE username = $1;
 

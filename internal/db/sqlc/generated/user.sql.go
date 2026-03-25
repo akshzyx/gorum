@@ -45,7 +45,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 }
 
 const getPublicProfileByUsername = `-- name: GetPublicProfileByUsername :one
-SELECT id, username, created_at
+SELECT id, username, bio, avatar_url, created_at
 FROM users
 WHERE username = $1
 `
@@ -53,13 +53,21 @@ WHERE username = $1
 type GetPublicProfileByUsernameRow struct {
 	ID        string           `json:"id"`
 	Username  string           `json:"username"`
+	Bio       pgtype.Text      `json:"bio"`
+	AvatarUrl pgtype.Text      `json:"avatar_url"`
 	CreatedAt pgtype.Timestamp `json:"created_at"`
 }
 
 func (q *Queries) GetPublicProfileByUsername(ctx context.Context, username string) (GetPublicProfileByUsernameRow, error) {
 	row := q.db.QueryRow(ctx, getPublicProfileByUsername, username)
 	var i GetPublicProfileByUsernameRow
-	err := row.Scan(&i.ID, &i.Username, &i.CreatedAt)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Bio,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+	)
 	return i, err
 }
 

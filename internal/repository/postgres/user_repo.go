@@ -79,9 +79,21 @@ func (r *UserRepository) GetPublicByUsername(
 		return user.PublicProfileResponse{}, err
 	}
 
+	var bio *string
+	if row.Bio.Valid {
+		bio = &row.Bio.String
+	}
+
+	var avatar *string
+	if row.AvatarUrl.Valid {
+		avatar = &row.AvatarUrl.String
+	}
+
 	return user.PublicProfileResponse{
 		ID:        row.ID,
 		Username:  row.Username,
+		Bio:       bio,
+		AvatarURL: avatar,
 		CreatedAt: row.CreatedAt.Time,
 	}, nil
 }

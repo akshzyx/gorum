@@ -46,6 +46,19 @@ func main() {
 func seedUsers(ctx context.Context, repo *postgres.UserRepository, q *db.Queries) []string {
 	var ids []string
 
+	bios := []string{
+		"backend dev",
+		"golang enjoyer",
+		"building cool stuff 🚀",
+		"coffee + code",
+		"clean architecture fan",
+		"debugging life",
+		"ship fast mindset",
+		"open source lover",
+		"learning everyday",
+		"just vibes ✨",
+	}
+
 	for i := 0; i < 30; i++ {
 		id := uuid.New().String()
 		username := fmt.Sprintf("user_%d", i+1)
@@ -62,6 +75,15 @@ func seedUsers(ctx context.Context, repo *postgres.UserRepository, q *db.Queries
 		// mark as verified
 		if err := q.ActivateUser(ctx, id); err != nil {
 			log.Println("activate user error:", err)
+		}
+
+		// add bio + avatar
+		bio := bios[rand.Intn(len(bios))]
+		avatar := fmt.Sprintf("https://i.pravatar.cc/150?u=%s", id)
+
+		err = repo.UpdateProfile(ctx, id, bio, avatar)
+		if err != nil {
+			log.Println("profile update error:", err)
 		}
 
 		ids = append(ids, id)
