@@ -25,4 +25,8 @@ type Repository interface {
 	// Likes (batch, used for feeds/lists)
 	GetLikesCountByPostIDs(ctx context.Context, postIDs []string) (map[string]int64, error)
 	GetUserLikedPosts(ctx context.Context, userID string, postIDs []string) (map[string]bool, error)
+
+	// User profile posts and replies
+	GetPostsByUser(ctx context.Context, userID string, limit int32) ([]*Post, error)
+	GetRepliesByUser(ctx context.Context, userID string, limit int32) ([]*Post, error)
 }

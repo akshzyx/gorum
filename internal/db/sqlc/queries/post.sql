@@ -57,3 +57,21 @@ SELECT post_id
 FROM post_likes
 WHERE user_id = $1
 AND post_id = ANY(sqlc.arg(post_ids)::text[]);
+
+-- name: GetPostsByUser :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NULL
+AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $2;
+
+-- name: GetRepliesByUser :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NOT NULL
+AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT $2;

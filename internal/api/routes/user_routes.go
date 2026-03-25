@@ -11,5 +11,11 @@ func UserRoutes(h *handlers.UserHandler) chi.Router {
 	// Public profile (read-only)
 	r.Get("/{username}", h.GetPublicProfile)
 
+	// user posts
+	r.Get("/{username}/posts", h.GetUserPosts)
+
+	// user replies)
+	r.Get("/{username}/replies", h.GetUserReplies)
+
 	return r
 }

@@ -54,7 +54,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	postService := post.NewService(postRepo)
 
 	// HANDLERS
-	userHandler := handlers.NewUserHandler(userService)
+	userHandler := handlers.NewUserHandler(userService, postService)
 	settingsHandler := handlers.NewSettingsHandler(userService)
 	authHandler := handlers.NewAuthHandler(authService)
 	postHandler := handlers.NewPostHandler(postService)

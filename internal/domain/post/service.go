@@ -172,3 +172,11 @@ func (s *Service) EnrichPosts(ctx context.Context, userID string, posts []*Post)
 
 	return resp, nil
 }
+
+func (s *Service) GetUserPosts(ctx context.Context, userID string, limit int32) ([]*Post, error) {
+	return s.repo.GetPostsByUser(ctx, userID, limit)
+}
+
+func (s *Service) GetUserReplies(ctx context.Context, userID string, limit int32) ([]*Post, error) {
+	return s.repo.GetRepliesByUser(ctx, userID, limit)
+}

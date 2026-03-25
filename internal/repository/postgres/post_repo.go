@@ -201,3 +201,47 @@ func (r *PostRepository) GetUserLikedPosts(ctx context.Context, userID string, p
 
 	return result, nil
 }
+
+func (r *PostRepository) GetPostsByUser(ctx context.Context, userID string, limit int32) ([]*post.Post, error) {
+	rows, err := r.q.GetPostsByUser(ctx, db.GetPostsByUserParams{
+		UserID: userID,
+		Limit:  limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}
+
+func (r *PostRepository) GetRepliesByUser(ctx context.Context, userID string, limit int32) ([]*post.Post, error) {
+	rows, err := r.q.GetRepliesByUser(ctx, db.GetRepliesByUserParams{
+		UserID: userID,
+		Limit:  limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}
