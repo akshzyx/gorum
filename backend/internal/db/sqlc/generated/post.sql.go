@@ -443,12 +443,18 @@ func (q *Queries) HasUserLikedPost(ctx context.Context, arg HasUserLikedPostPara
 }
 
 const listLatestPosts = `-- name: ListLatestPosts :many
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE deleted_at IS NULL
-AND parent_post_id IS NULL
-AND ($1::timestamptz IS NULL OR created_at < $1)
-ORDER BY created_at DESC
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.deleted_at IS NULL
+AND p.parent_post_id IS NULL
+AND ($1::timestamptz IS NULL OR p.created_at < $1)
+ORDER BY p.created_at DESC
 LIMIT $2
 `
 
@@ -462,6 +468,7 @@ type ListLatestPostsRow struct {
 	UserID    string             `json:"user_id"`
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Username  string             `json:"username"`
 }
 
 func (q *Queries) ListLatestPosts(ctx context.Context, arg ListLatestPostsParams) ([]ListLatestPostsRow, error) {
@@ -478,6 +485,7 @@ func (q *Queries) ListLatestPosts(ctx context.Context, arg ListLatestPostsParams
 			&i.UserID,
 			&i.Content,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}

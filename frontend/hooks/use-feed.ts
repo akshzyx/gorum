@@ -1,8 +1,25 @@
 import { useState } from "react";
 import { getPosts } from "@/lib/api";
 
+type Post = {
+  id: string;
+  user_id: string;
+  username: string;
+  content: string;
+  created_at: string;
+  likes: number;
+  liked: boolean;
+  reply_count: number;
+};
+
+type FeedResponse = {
+  data: Post[];
+  next_cursor: string | null;
+  has_more: boolean;
+};
+
 export function useFeed() {
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -12,7 +29,7 @@ export function useFeed() {
 
     setLoading(true);
 
-    const data = await getPosts(cursor || undefined);
+    const data: FeedResponse = await getPosts(cursor || undefined);
 
     setPosts((prev) => [...prev, ...data.data]);
     setCursor(data.next_cursor);

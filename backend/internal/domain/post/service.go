@@ -199,6 +199,7 @@ func (s *Service) EnrichPosts(ctx context.Context, userID string, posts []*Post)
 		resp = append(resp, map[string]interface{}{
 			"id":          p.ID,
 			"user_id":     p.UserID,
+			"username":    p.Username,
 			"content":     p.Content,
 			"created_at":  p.CreatedAt,
 			"likes":       likesMap[p.ID],

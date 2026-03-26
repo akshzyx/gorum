@@ -72,6 +72,7 @@ func (r *PostRepository) ListLatest(ctx context.Context, limit int32, cursor *ti
 		posts = append(posts, &post.Post{
 			ID:        row.ID,
 			UserID:    row.UserID,
+			Username:  row.Username,
 			Content:   row.Content,
 			CreatedAt: row.CreatedAt.Time,
 		})
