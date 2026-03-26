@@ -111,6 +111,7 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *PostHandler) ListLatest(w http.ResponseWriter, r *http.Request) {
 	limit := int32(20)
+	cursor := r.URL.Query().Get("cursor")
 
 	if q := r.URL.Query().Get("limit"); q != "" {
 		if v, err := strconv.Atoi(q); err == nil {
@@ -118,7 +119,7 @@ func (h *PostHandler) ListLatest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	posts, err := h.service.ListLatest(r.Context(), limit)
+	posts, nextCursor, err := h.service.ListLatest(r.Context(), limit, cursor)
 	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
@@ -139,7 +140,11 @@ func (h *PostHandler) ListLatest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":        resp,
+		"next_cursor": nextCursor,
+		"has_more":    nextCursor != "",
+	})
 }
 
 // Like handlers
@@ -236,7 +241,21 @@ func (h *PostHandler) Reply(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) ListReplies(w http.ResponseWriter, r *http.Request) {
 	postID := chi.URLParam(r, "id")
 
-	posts, err := h.service.ListReplies(r.Context(), postID)
+	limit := int32(20)
+	cursor := r.URL.Query().Get("cursor")
+	order := r.URL.Query().Get("order")
+
+	if order != "desc" {
+		order = "asc"
+	}
+
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil {
+			limit = int32(v)
+		}
+	}
+
+	posts, nextCursor, err := h.service.ListRepliesPaginated(r.Context(), postID, limit, cursor, order)
 	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
@@ -252,7 +271,11 @@ func (h *PostHandler) ListReplies(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":        resp,
+		"next_cursor": nextCursor,
+		"has_more":    nextCursor != "",
+	})
 }
 
 func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {

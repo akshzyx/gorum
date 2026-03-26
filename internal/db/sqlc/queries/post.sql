@@ -18,8 +18,9 @@ SELECT id, user_id, content, created_at
 FROM posts
 WHERE deleted_at IS NULL
 AND parent_post_id IS NULL
+AND ($1::timestamptz IS NULL OR created_at < $1)
 ORDER BY created_at DESC
-LIMIT $1;
+LIMIT $2;
 
 -- name: CountReplies :one
 SELECT COUNT(*)
@@ -81,3 +82,41 @@ SELECT parent_post_id AS post_id, COUNT(*) AS count
 FROM posts
 WHERE parent_post_id = ANY($1::text[])
 GROUP BY parent_post_id;
+
+-- name: GetPostsByUserCursor :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NULL
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3;
+
+-- name: GetRepliesByUserCursor :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NOT NULL
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3;
+
+-- name: ListRepliesCursorAsc :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE parent_post_id = $1
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at > $2)
+ORDER BY created_at ASC
+LIMIT $3;
+
+-- name: ListRepliesCursorDesc :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE parent_post_id = $1
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3;

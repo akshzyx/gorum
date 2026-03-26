@@ -3,6 +3,7 @@ package post
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -64,8 +65,34 @@ func (s *Service) Delete(ctx context.Context, postID, userID string) error {
 	return nil
 }
 
-func (s *Service) ListLatest(ctx context.Context, limit int32) ([]*Post, error) {
-	return s.repo.ListLatest(ctx, limit)
+func (s *Service) ListLatest(ctx context.Context, limit int32, cursor string) ([]*Post, string, error) {
+	var cursorTime *time.Time
+
+	if cursor != "" {
+		t, err := time.Parse(time.RFC3339, cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		cursorTime = &t
+	}
+
+	posts, err := s.repo.ListLatest(ctx, limit+1, cursorTime)
+	if err != nil {
+		return nil, "", err
+	}
+
+	hasMore := false
+	if int32(len(posts)) > limit {
+		hasMore = true
+		posts = posts[:limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(posts) > 0 {
+		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+	}
+
+	return posts, nextCursor, nil
 }
 
 func (s *Service) Reply(ctx context.Context, userID string, parentID string, req *CreateReplyRequest) (string, error) {
@@ -189,4 +216,102 @@ func (s *Service) GetUserPosts(ctx context.Context, userID string, limit int32) 
 
 func (s *Service) GetUserReplies(ctx context.Context, userID string, limit int32) ([]*Post, error) {
 	return s.repo.GetRepliesByUser(ctx, userID, limit)
+}
+
+func (s *Service) GetUserPostsPaginated(ctx context.Context, userID string, limit int32, cursor string) ([]*Post, string, error) {
+	var cursorTime *time.Time
+
+	if cursor != "" {
+		t, err := time.Parse(time.RFC3339, cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		cursorTime = &t
+	}
+
+	posts, err := s.repo.GetPostsByUserCursor(ctx, userID, limit+1, cursorTime)
+	if err != nil {
+		return nil, "", err
+	}
+
+	hasMore := false
+	if int32(len(posts)) > limit {
+		hasMore = true
+		posts = posts[:limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(posts) > 0 {
+		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+	}
+
+	return posts, nextCursor, nil
+}
+
+func (s *Service) GetUserRepliesPaginated(ctx context.Context, userID string, limit int32, cursor string) ([]*Post, string, error) {
+	var cursorTime *time.Time
+
+	if cursor != "" {
+		t, err := time.Parse(time.RFC3339, cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		cursorTime = &t
+	}
+
+	posts, err := s.repo.GetRepliesByUserCursor(ctx, userID, limit+1, cursorTime)
+	if err != nil {
+		return nil, "", err
+	}
+
+	hasMore := false
+	if int32(len(posts)) > limit {
+		hasMore = true
+		posts = posts[:limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(posts) > 0 {
+		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+	}
+
+	return posts, nextCursor, nil
+}
+
+func (s *Service) ListRepliesPaginated(ctx context.Context, postID string, limit int32, cursor string, order string) ([]*Post, string, error) {
+	var cursorTime *time.Time
+
+	if cursor != "" {
+		t, err := time.Parse(time.RFC3339, cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		cursorTime = &t
+	}
+
+	var posts []*Post
+	var err error
+
+	if order == "desc" {
+		posts, err = s.repo.ListRepliesCursorDesc(ctx, postID, limit+1, cursorTime)
+	} else {
+		posts, err = s.repo.ListRepliesCursorAsc(ctx, postID, limit+1, cursorTime)
+	}
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	hasMore := false
+	if int32(len(posts)) > limit {
+		hasMore = true
+		posts = posts[:limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(posts) > 0 {
+		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+	}
+
+	return posts, nextCursor, nil
 }

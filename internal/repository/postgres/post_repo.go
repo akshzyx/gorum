@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	db "github.com/akshzyx/gorum/internal/db/sqlc/generated"
 	"github.com/akshzyx/gorum/internal/domain/post"
@@ -44,8 +45,24 @@ func (r *PostRepository) Delete(ctx context.Context, postID string) error {
 	return r.q.DeletePostByID(ctx, postID)
 }
 
-func (r *PostRepository) ListLatest(ctx context.Context, limit int32) ([]*post.Post, error) {
-	rows, err := r.q.ListLatestPosts(ctx, limit)
+func (r *PostRepository) ListLatest(ctx context.Context, limit int32, cursor *time.Time) ([]*post.Post, error) {
+	var cursorParam pgtype.Timestamptz
+
+	if cursor != nil {
+		cursorParam = pgtype.Timestamptz{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		cursorParam = pgtype.Timestamptz{
+			Valid: false,
+		}
+	}
+
+	rows, err := r.q.ListLatestPosts(ctx, db.ListLatestPostsParams{
+		Column1: cursorParam,
+		Limit:   limit,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -245,6 +262,146 @@ func (r *PostRepository) GetRepliesByUser(ctx context.Context, userID string, li
 	rows, err := r.q.GetRepliesByUser(ctx, db.GetRepliesByUserParams{
 		UserID: userID,
 		Limit:  limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}
+
+func (r *PostRepository) GetPostsByUserCursor(ctx context.Context, userID string, limit int32, cursor *time.Time) ([]*post.Post, error) {
+	var cursorParam pgtype.Timestamptz
+
+	if cursor != nil {
+		cursorParam = pgtype.Timestamptz{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		cursorParam = pgtype.Timestamptz{
+			Valid: false,
+		}
+	}
+
+	rows, err := r.q.GetPostsByUserCursor(ctx, db.GetPostsByUserCursorParams{
+		UserID:  userID,
+		Column2: cursorParam,
+		Limit:   limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}
+
+func (r *PostRepository) GetRepliesByUserCursor(ctx context.Context, userID string, limit int32, cursor *time.Time) ([]*post.Post, error) {
+	var cursorParam pgtype.Timestamptz
+
+	if cursor != nil {
+		cursorParam = pgtype.Timestamptz{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		cursorParam = pgtype.Timestamptz{
+			Valid: false,
+		}
+	}
+
+	rows, err := r.q.GetRepliesByUserCursor(ctx, db.GetRepliesByUserCursorParams{
+		UserID:  userID,
+		Column2: cursorParam,
+		Limit:   limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}
+
+func (r *PostRepository) ListRepliesCursorAsc(ctx context.Context, postID string, limit int32, cursor *time.Time) ([]*post.Post, error) {
+	var cursorParam pgtype.Timestamptz
+
+	if cursor != nil {
+		cursorParam = pgtype.Timestamptz{Time: *cursor, Valid: true}
+	} else {
+		cursorParam = pgtype.Timestamptz{Valid: false}
+	}
+
+	rows, err := r.q.ListRepliesCursorAsc(ctx, db.ListRepliesCursorAscParams{
+		ParentPostID: pgtype.Text{
+			String: postID,
+			Valid:  true,
+		},
+		Column2: cursorParam,
+		Limit:   limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}
+
+func (r *PostRepository) ListRepliesCursorDesc(ctx context.Context, postID string, limit int32, cursor *time.Time) ([]*post.Post, error) {
+	var cursorParam pgtype.Timestamptz
+
+	if cursor != nil {
+		cursorParam = pgtype.Timestamptz{Time: *cursor, Valid: true}
+	} else {
+		cursorParam = pgtype.Timestamptz{Valid: false}
+	}
+
+	rows, err := r.q.ListRepliesCursorDesc(ctx, db.ListRepliesCursorDescParams{
+		ParentPostID: pgtype.Text{
+			String: postID,
+			Valid:  true,
+		},
+		Column2: cursorParam,
+		Limit:   limit,
 	})
 	if err != nil {
 		return nil, err

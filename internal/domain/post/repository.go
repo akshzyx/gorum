@@ -1,13 +1,16 @@
 package post
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Repository interface {
 	// Posts
 	Create(ctx context.Context, post *Post) error
 	GetByID(ctx context.Context, id string) (*Post, error)
 	Delete(ctx context.Context, postID string) error
-	ListLatest(ctx context.Context, limit int32) ([]*Post, error)
+	ListLatest(ctx context.Context, limit int32, cursor *time.Time) ([]*Post, error)
 
 	// Replies
 	GetPostForReply(ctx context.Context, id string) (*Post, error)
@@ -32,4 +35,8 @@ type Repository interface {
 	// User profile posts and replies
 	GetPostsByUser(ctx context.Context, userID string, limit int32) ([]*Post, error)
 	GetRepliesByUser(ctx context.Context, userID string, limit int32) ([]*Post, error)
+	GetPostsByUserCursor(ctx context.Context, userID string, limit int32, cursor *time.Time) ([]*Post, error)
+	GetRepliesByUserCursor(ctx context.Context, userID string, limit int32, cursor *time.Time) ([]*Post, error)
+	ListRepliesCursorAsc(ctx context.Context, postID string, limit int32, cursor *time.Time) ([]*Post, error)
+	ListRepliesCursorDesc(ctx context.Context, postID string, limit int32, cursor *time.Time) ([]*Post, error)
 }
