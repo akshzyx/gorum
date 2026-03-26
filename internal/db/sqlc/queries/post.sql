@@ -102,3 +102,21 @@ AND deleted_at IS NULL
 AND ($2::timestamptz IS NULL OR created_at < $2)
 ORDER BY created_at DESC
 LIMIT $3;
+
+-- name: ListRepliesCursorAsc :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE parent_post_id = $1
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at > $2)
+ORDER BY created_at ASC
+LIMIT $3;
+
+-- name: ListRepliesCursorDesc :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE parent_post_id = $1
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3;

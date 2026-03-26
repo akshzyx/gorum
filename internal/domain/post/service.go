@@ -277,3 +277,41 @@ func (s *Service) GetUserRepliesPaginated(ctx context.Context, userID string, li
 
 	return posts, nextCursor, nil
 }
+
+func (s *Service) ListRepliesPaginated(ctx context.Context, postID string, limit int32, cursor string, order string) ([]*Post, string, error) {
+	var cursorTime *time.Time
+
+	if cursor != "" {
+		t, err := time.Parse(time.RFC3339, cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		cursorTime = &t
+	}
+
+	var posts []*Post
+	var err error
+
+	if order == "desc" {
+		posts, err = s.repo.ListRepliesCursorDesc(ctx, postID, limit+1, cursorTime)
+	} else {
+		posts, err = s.repo.ListRepliesCursorAsc(ctx, postID, limit+1, cursorTime)
+	}
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	hasMore := false
+	if int32(len(posts)) > limit {
+		hasMore = true
+		posts = posts[:limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(posts) > 0 {
+		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+	}
+
+	return posts, nextCursor, nil
+}

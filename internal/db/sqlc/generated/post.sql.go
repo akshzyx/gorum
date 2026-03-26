@@ -488,3 +488,99 @@ func (q *Queries) ListLatestPosts(ctx context.Context, arg ListLatestPostsParams
 	}
 	return items, nil
 }
+
+const listRepliesCursorAsc = `-- name: ListRepliesCursorAsc :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE parent_post_id = $1
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at > $2)
+ORDER BY created_at ASC
+LIMIT $3
+`
+
+type ListRepliesCursorAscParams struct {
+	ParentPostID pgtype.Text        `json:"parent_post_id"`
+	Column2      pgtype.Timestamptz `json:"column_2"`
+	Limit        int32              `json:"limit"`
+}
+
+type ListRepliesCursorAscRow struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ListRepliesCursorAsc(ctx context.Context, arg ListRepliesCursorAscParams) ([]ListRepliesCursorAscRow, error) {
+	rows, err := q.db.Query(ctx, listRepliesCursorAsc, arg.ParentPostID, arg.Column2, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRepliesCursorAscRow
+	for rows.Next() {
+		var i ListRepliesCursorAscRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRepliesCursorDesc = `-- name: ListRepliesCursorDesc :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE parent_post_id = $1
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3
+`
+
+type ListRepliesCursorDescParams struct {
+	ParentPostID pgtype.Text        `json:"parent_post_id"`
+	Column2      pgtype.Timestamptz `json:"column_2"`
+	Limit        int32              `json:"limit"`
+}
+
+type ListRepliesCursorDescRow struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ListRepliesCursorDesc(ctx context.Context, arg ListRepliesCursorDescParams) ([]ListRepliesCursorDescRow, error) {
+	rows, err := q.db.Query(ctx, listRepliesCursorDesc, arg.ParentPostID, arg.Column2, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRepliesCursorDescRow
+	for rows.Next() {
+		var i ListRepliesCursorDescRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
