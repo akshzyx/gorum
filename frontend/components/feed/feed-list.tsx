@@ -9,24 +9,37 @@ export default function FeedList() {
   const { posts, load, hasMore, loading } = useFeed();
   const ref = useRef<HTMLDivElement | null>(null);
 
+  // initial load
   useEffect(() => {
     load();
   }, []);
 
+  // intersection observer
   useEffect(() => {
     if (!ref.current) return;
 
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        load();
-      }
-    });
-
     const el = ref.current;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+
+        if (entry.isIntersecting && hasMore && !loading) {
+          load();
+        }
+      },
+      {
+        rootMargin: "200px", // preload earlier
+      },
+    );
+
     observer.observe(el);
 
-    return () => observer.unobserve(el);
-  }, [hasMore]);
+    return () => {
+      observer.unobserve(el);
+      observer.disconnect();
+    };
+  }, [hasMore, loading, load]);
 
   return (
     <>
@@ -34,7 +47,7 @@ export default function FeedList() {
         <PostCard key={p.id} post={p} />
       ))}
 
-      {hasMore && <div ref={ref} />}
+      {hasMore && <div ref={ref} className="h-10" />}
 
       {loading && <Loader />}
     </>

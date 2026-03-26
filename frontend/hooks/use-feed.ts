@@ -29,13 +29,20 @@ export function useFeed() {
 
     setLoading(true);
 
-    const data: FeedResponse = await getPosts(cursor || undefined);
+    try {
+      const data: FeedResponse = await getPosts(cursor || undefined);
 
-    setPosts((prev) => [...prev, ...data.data]);
-    setCursor(data.next_cursor);
-    setHasMore(data.has_more);
+      setPosts((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newPosts = data.data.filter((p) => !existingIds.has(p.id));
+        return [...prev, ...newPosts];
+      });
 
-    setLoading(false);
+      setCursor(data.next_cursor);
+      setHasMore(data.has_more);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return { posts, load, hasMore, loading };
