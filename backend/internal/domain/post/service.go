@@ -67,16 +67,21 @@ func (s *Service) Delete(ctx context.Context, postID, userID string) error {
 
 func (s *Service) ListLatest(ctx context.Context, limit int32, cursor string) ([]*Post, string, error) {
 	var cursorTime *time.Time
+	var cursorID *string
 
 	if cursor != "" {
-		t, err := time.Parse(time.RFC3339, cursor)
-		if err != nil {
-			return nil, "", err
+		parts := strings.Split(cursor, "|")
+
+		if len(parts) == 2 {
+			t, err := time.Parse(time.RFC3339, parts[0])
+			if err == nil {
+				cursorTime = &t
+				cursorID = &parts[1]
+			}
 		}
-		cursorTime = &t
 	}
 
-	posts, err := s.repo.ListLatest(ctx, limit+1, cursorTime)
+	posts, err := s.repo.ListLatest(ctx, limit+1, cursorTime, cursorID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -89,7 +94,8 @@ func (s *Service) ListLatest(ctx context.Context, limit int32, cursor string) ([
 
 	var nextCursor string
 	if hasMore && len(posts) > 0 {
-		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+		last := posts[len(posts)-1]
+		nextCursor = last.CreatedAt.Format(time.RFC3339) + "|" + last.ID
 	}
 
 	return posts, nextCursor, nil

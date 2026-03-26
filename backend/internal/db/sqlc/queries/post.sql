@@ -24,9 +24,13 @@ FROM posts p
 JOIN users u ON u.id = p.user_id
 WHERE p.deleted_at IS NULL
 AND p.parent_post_id IS NULL
-AND ($1::timestamptz IS NULL OR p.created_at < $1)
-ORDER BY p.created_at DESC
-LIMIT $2;
+AND (
+  $1::timestamptz IS NULL
+  OR p.created_at < $1
+  OR (p.created_at = $1 AND p.id < $2)
+)
+ORDER BY p.created_at DESC, p.id DESC
+LIMIT $3;
 
 -- name: CountReplies :one
 SELECT COUNT(*)

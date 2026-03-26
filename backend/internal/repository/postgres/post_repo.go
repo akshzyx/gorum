@@ -45,22 +45,33 @@ func (r *PostRepository) Delete(ctx context.Context, postID string) error {
 	return r.q.DeletePostByID(ctx, postID)
 }
 
-func (r *PostRepository) ListLatest(ctx context.Context, limit int32, cursor *time.Time) ([]*post.Post, error) {
-	var cursorParam pgtype.Timestamptz
+func (r *PostRepository) ListLatest(
+	ctx context.Context,
+	limit int32,
+	cursorTime *time.Time,
+	cursorID *string,
+) ([]*post.Post, error) {
+	var timeParam pgtype.Timestamptz
+	var idParam string
 
-	if cursor != nil {
-		cursorParam = pgtype.Timestamptz{
-			Time:  *cursor,
+	if cursorTime != nil {
+		timeParam = pgtype.Timestamptz{
+			Time:  *cursorTime,
 			Valid: true,
 		}
 	} else {
-		cursorParam = pgtype.Timestamptz{
+		timeParam = pgtype.Timestamptz{
 			Valid: false,
 		}
 	}
 
+	if cursorID != nil {
+		idParam = *cursorID
+	}
+
 	rows, err := r.q.ListLatestPosts(ctx, db.ListLatestPostsParams{
-		Column1: cursorParam,
+		Column1: timeParam,
+		ID:      idParam,
 		Limit:   limit,
 	})
 	if err != nil {

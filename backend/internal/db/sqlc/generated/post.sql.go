@@ -453,13 +453,18 @@ FROM posts p
 JOIN users u ON u.id = p.user_id
 WHERE p.deleted_at IS NULL
 AND p.parent_post_id IS NULL
-AND ($1::timestamptz IS NULL OR p.created_at < $1)
-ORDER BY p.created_at DESC
-LIMIT $2
+AND (
+  $1::timestamptz IS NULL
+  OR p.created_at < $1
+  OR (p.created_at = $1 AND p.id < $2)
+)
+ORDER BY p.created_at DESC, p.id DESC
+LIMIT $3
 `
 
 type ListLatestPostsParams struct {
 	Column1 pgtype.Timestamptz `json:"column_1"`
+	ID      string             `json:"id"`
 	Limit   int32              `json:"limit"`
 }
 
@@ -472,7 +477,7 @@ type ListLatestPostsRow struct {
 }
 
 func (q *Queries) ListLatestPosts(ctx context.Context, arg ListLatestPostsParams) ([]ListLatestPostsRow, error) {
-	rows, err := q.db.Query(ctx, listLatestPosts, arg.Column1, arg.Limit)
+	rows, err := q.db.Query(ctx, listLatestPosts, arg.Column1, arg.ID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

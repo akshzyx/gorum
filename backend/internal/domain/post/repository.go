@@ -10,7 +10,7 @@ type Repository interface {
 	Create(ctx context.Context, post *Post) error
 	GetByID(ctx context.Context, id string) (*Post, error)
 	Delete(ctx context.Context, postID string) error
-	ListLatest(ctx context.Context, limit int32, cursor *time.Time) ([]*Post, error)
+	ListLatest(ctx context.Context, limit int32, cursorTime *time.Time, cursorID *string) ([]*Post, error)
 
 	// Replies
 	GetPostForReply(ctx context.Context, id string) (*Post, error)
