@@ -1,9 +1,9 @@
 # backend
-/bin/
-/build/
-/dist/
-/tmp/
-/tmp/*
+/backend/bin/
+/backend/build/
+/backend/dist/
+/backend/tmp/
+/backend/tmp/*
 
 # binaries
 *.exe
@@ -36,3 +36,19 @@ logs/
 
 # docker
 /volumes/
+
+# frontend
+/frontend/node_modules/
+/frontend/.next/
+/frontend/out/
+/frontend/build/
+
+# next
+.next/
+out/
+
+# air
+.air.toml
+
+# tmp
+tmp/

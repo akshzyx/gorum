@@ -1,50 +1,15 @@
-# Makefile for Gorum - Simple migration commands
+BACKEND_DIR=backend
+FRONTEND_DIR=frontend
 
-include .env
-export
+run-backend:
+	cd $(BACKEND_DIR) && air
 
-MIGRATIONS_DIR=./internal/db/migrations
+run-frontend:
+	cd $(FRONTEND_DIR) && npm run dev
 
-.DEFAULT_GOAL := help
+run:
+	make -j2 run-backend run-frontend
 
-help:
-	@echo "Usage:"
-	@echo "  make migrate-up                # Run all pending migrations"
-	@echo "  make migrate-down              # Rollback last migration"
-	@echo "  make migrate create_name       # Create a new migration"
-	@echo "  make reset                     # Reset database (drop + migrate)"
-	@echo "  make seed                      # Seed database with dummy data"
-	@echo "  make dev                       # Reset + seed (full fresh setup)"
-
-# Run migrations up
-migrate-up:
-	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" up
-
-# Rollback last migration
-migrate-down:
-	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" down
-
-# Create new migration (usage: make migrate create_tweets)
-migrate:
-	@if [ "$(word 2,$(MAKECMDGOALS))" = "" ]; then \
-		echo "Please provide migration name, e.g. make migrate create_tweets"; \
-		exit 1; \
-	fi
-	migrate create -ext sql -dir $(MIGRATIONS_DIR) -seq $(word 2,$(MAKECMDGOALS))
-
-# Reset database (drop schema + run migrations)
-reset:
-	./scripts/reset_db.sh
-
-# Seed database (run Go seeder)
-seed:
-	go run scripts/seed.go
-
-# Full dev setup (clean DB + seed data)
-dev:
-	$(MAKE) reset
-	$(MAKE) seed
-
-# Prevent Make from thinking the second word is a separate target
-%:
-	@:
+install:
+	cd $(BACKEND_DIR) && go mod tidy
+	cd $(FRONTEND_DIR) && npm install
