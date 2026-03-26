@@ -13,10 +13,13 @@ import (
 	"github.com/akshzyx/gorum/internal/repository/postgres"
 	"github.com/akshzyx/gorum/internal/util"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
+	start := time.Now()
+
 	ctx := context.Background()
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -36,183 +39,164 @@ func main() {
 	fmt.Println("🌱 Seeding started...")
 
 	users := seedUsers(ctx, userRepo, queries, r)
-	posts := seedPosts(ctx, postRepo, users, r)
+	posts := seedPostsBatch(ctx, pool, users, r)
 	seedReplies(ctx, postRepo, users, posts, r)
 	seedLikes(ctx, postRepo, users, posts, r)
 
 	fmt.Println("✅ Seeding complete!")
+	fmt.Println("⏱ Total time:", time.Since(start))
+}
+
+func randomTime(r *rand.Rand) time.Time {
+	// last 30 days
+	return time.Now().Add(-time.Duration(r.Intn(720)) * time.Hour)
 }
 
 func seedUsers(ctx context.Context, repo *postgres.UserRepository, q *db.Queries, r *rand.Rand) []string {
+	start := time.Now()
+
 	var ids []string
 
+	adjectives := []string{"cool", "fast", "lazy", "happy", "wild", "silent", "noisy", "smart", "crazy", "chill"}
+	nouns := []string{"dev", "coder", "builder", "hacker", "gopher", "engineer", "creator", "thinker", "designer"}
+
 	bios := []string{
-		"backend dev",
-		"golang enjoyer",
-		"building cool stuff 🚀",
-		"coffee + code",
-		"clean architecture fan",
-		"debugging life",
-		"ship fast mindset",
-		"open source lover",
-		"learning everyday",
-		"just vibes ✨",
+		"backend dev", "golang enjoyer", "building cool stuff 🚀",
+		"coffee + code", "clean architecture fan", "debugging life",
+		"ship fast mindset", "open source lover", "learning everyday", "just vibes ✨",
 	}
+
+	// hash once (major speed boost)
+	hash, _ := util.HashPassword("password123")
 
 	for i := 0; i < 30; i++ {
 		id := uuid.New().String()
-		username := fmt.Sprintf("user_%d", i+1)
-		email := fmt.Sprintf("user_%d@example.com", i+1)
 
-		hash, _ := util.HashPassword("password123")
+		username := fmt.Sprintf("%s_%s_%d",
+			adjectives[r.Intn(len(adjectives))],
+			nouns[r.Intn(len(nouns))],
+			r.Intn(100000),
+		)
 
-		err := repo.Create(ctx, id, username, email, hash)
-		if err != nil {
+		email := fmt.Sprintf("%s_%s@seed.dev", username, id[:8])
+
+		if err := repo.Create(ctx, id, username, email, hash); err != nil {
 			log.Println("user error:", err)
 			continue
 		}
 
-		// mark as verified
-		if err := q.ActivateUser(ctx, id); err != nil {
-			log.Println("activate user error:", err)
-		}
+		_ = q.ActivateUser(ctx, id)
 
-		// add bio + avatar
 		bio := bios[r.Intn(len(bios))]
 		avatar := fmt.Sprintf("https://i.pravatar.cc/150?u=%s", id)
 
-		err = repo.UpdateProfile(ctx, id, bio, avatar)
-		if err != nil {
-			log.Println("profile update error:", err)
-		}
+		_ = repo.UpdateProfile(ctx, id, bio, avatar)
 
 		ids = append(ids, id)
 	}
 
-	fmt.Println("👤 users created:", len(ids))
+	fmt.Println("👤 users:", len(ids), "⏱", time.Since(start))
 	return ids
 }
 
 var samplePosts = []string{
-	"hello world 👋",
-	"building twitter clone 🚀",
-	"golang is clean af",
-	"debugging pain 😭",
-	"late night coding",
-	"sqlc is goated",
-	"clean architecture >>",
-	"why is this not working",
-	"ship fast",
-	"just deployed 🔥",
+	"hello world 👋", "building twitter clone 🚀", "golang is clean af",
+	"debugging pain 😭", "late night coding", "sqlc is goated",
+	"clean architecture >>", "why is this not working", "ship fast", "just deployed 🔥",
 }
 
-func seedPosts(ctx context.Context, repo *postgres.PostRepository, users []string, r *rand.Rand) []string {
+// batch insert posts
+func seedPostsBatch(ctx context.Context, pool *pgxpool.Pool, users []string, r *rand.Rand) []string {
+	start := time.Now()
+
 	var ids []string
+	batch := &pgx.Batch{}
 
 	for i := 0; i < 120; i++ {
-		p := &post.Post{
-			ID:      uuid.New().String(),
-			UserID:  users[r.Intn(len(users))],
-			Content: samplePosts[r.Intn(len(samplePosts))],
-		}
+		id := uuid.New().String()
+		userID := users[r.Intn(len(users))]
+		content := samplePosts[r.Intn(len(samplePosts))]
+		createdAt := randomTime(r)
 
-		err := repo.Create(ctx, p)
-		if err != nil {
-			log.Println("post error:", err)
-			continue
-		}
+		batch.Queue(
+			`INSERT INTO posts (id, user_id, content, created_at)
+			 VALUES ($1, $2, $3, $4)`,
+			id, userID, content, createdAt,
+		)
 
-		ids = append(ids, p.ID)
+		ids = append(ids, id)
 	}
 
-	fmt.Println("📝 posts created:", len(ids))
+	br := pool.SendBatch(ctx, batch)
+	defer br.Close()
+
+	for i := 0; i < len(ids); i++ {
+		_, err := br.Exec()
+		if err != nil {
+			log.Println("batch post error:", err)
+		}
+	}
+
+	fmt.Println("📝 posts:", len(ids), "⏱", time.Since(start))
 	return ids
 }
 
 var sampleReplies = []string{
-	"totally agree 💯",
-	"this is interesting",
-	"can you explain more?",
-	"nah I disagree",
-	"this helped a lot 🙏",
-	"lol same",
-	"this is underrated",
-	"good point!",
-	"what do you mean?",
-	"🔥🔥🔥",
+	"totally agree 💯", "this is interesting", "can you explain more?",
+	"nah I disagree", "this helped a lot 🙏", "lol same",
+	"this is underrated", "good point!", "what do you mean?", "🔥🔥🔥",
+}
+
+// recursive threads (better graph)
+func createRepliesRecursive(ctx context.Context, repo *postgres.PostRepository, users []string, rootID string, parentID string, depth int, r *rand.Rand) int {
+	if depth > 3 {
+		return 0
+	}
+
+	count := 0
+	numReplies := r.Intn(3)
+
+	for i := 0; i < numReplies; i++ {
+		replyID := uuid.New().String()
+
+		p := &post.Post{
+			ID:           replyID,
+			UserID:       users[r.Intn(len(users))],
+			Content:      sampleReplies[r.Intn(len(sampleReplies))],
+			ParentPostID: &parentID,
+			RootPostID:   &rootID,
+		}
+
+		if err := repo.CreateReply(ctx, p); err != nil {
+			continue
+		}
+
+		count++
+
+		// recursive depth
+		count += createRepliesRecursive(ctx, repo, users, rootID, replyID, depth+1, r)
+	}
+
+	return count
 }
 
 func seedReplies(ctx context.Context, repo *postgres.PostRepository, users, posts []string, r *rand.Rand) {
+	start := time.Now()
 	total := 0
 
-	for _, rootPostID := range posts {
-		// 70% of posts get replies
+	for _, postID := range posts {
 		if r.Intn(100) > 70 {
 			continue
 		}
 
-		numReplies := r.Intn(5) + 1
-
-		for i := 0; i < numReplies; i++ {
-			replyID := uuid.New().String()
-			userID := users[r.Intn(len(users))]
-			content := sampleReplies[r.Intn(len(sampleReplies))]
-
-			rootID := rootPostID
-			parentID := rootPostID
-
-			p := &post.Post{
-				ID:           replyID,
-				UserID:       userID,
-				Content:      content,
-				ParentPostID: &parentID,
-				RootPostID:   &rootID,
-			}
-
-			err := repo.CreateReply(ctx, p)
-			if err != nil {
-				log.Println("reply error:", err)
-				continue
-			}
-
-			total++
-
-			// nested replies
-			if r.Intn(100) < 40 {
-				nestedCount := r.Intn(3) + 1
-
-				for j := 0; j < nestedCount; j++ {
-					nestedID := uuid.New().String()
-					nestedUser := users[r.Intn(len(users))]
-					nestedContent := sampleReplies[r.Intn(len(sampleReplies))]
-
-					parent := replyID
-					root := rootPostID
-
-					nested := &post.Post{
-						ID:           nestedID,
-						UserID:       nestedUser,
-						Content:      nestedContent,
-						ParentPostID: &parent,
-						RootPostID:   &root,
-					}
-
-					err := repo.CreateReply(ctx, nested)
-					if err != nil {
-						log.Println("nested reply error:", err)
-						continue
-					}
-
-					total++
-				}
-			}
-		}
+		total += createRepliesRecursive(ctx, repo, users, postID, postID, 0, r)
 	}
 
-	fmt.Println("💬 replies created:", total)
+	fmt.Println("💬 replies:", total, "⏱", time.Since(start))
 }
 
 func seedLikes(ctx context.Context, repo *postgres.PostRepository, users, posts []string, r *rand.Rand) {
+	start := time.Now()
 	total := 0
 
 	for _, userID := range users {
@@ -221,12 +205,11 @@ func seedLikes(ctx context.Context, repo *postgres.PostRepository, users, posts 
 		for i := 0; i < n; i++ {
 			postID := posts[r.Intn(len(posts))]
 
-			err := repo.CreateLike(ctx, userID, postID)
-			if err == nil {
+			if err := repo.CreateLike(ctx, userID, postID); err == nil {
 				total++
 			}
 		}
 	}
 
-	fmt.Println("❤️ likes created:", total)
+	fmt.Println("❤️ likes:", total, "⏱", time.Since(start))
 }
