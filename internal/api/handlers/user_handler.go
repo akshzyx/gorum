@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/akshzyx/gorum/internal/api/middlewares"
 	"github.com/akshzyx/gorum/internal/domain/post"
@@ -62,7 +63,16 @@ func (h *UserHandler) GetUserPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := h.postService.GetUserPosts(r.Context(), u.ID, 20)
+	limit := int32(20)
+	cursor := r.URL.Query().Get("cursor")
+
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil {
+			limit = int32(v)
+		}
+	}
+
+	posts, nextCursor, err := h.postService.GetUserPostsPaginated(r.Context(), u.ID, limit, cursor)
 	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
@@ -76,7 +86,11 @@ func (h *UserHandler) GetUserPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":        resp,
+		"next_cursor": nextCursor,
+		"has_more":    nextCursor != "",
+	})
 }
 
 func (h *UserHandler) GetUserReplies(w http.ResponseWriter, r *http.Request) {

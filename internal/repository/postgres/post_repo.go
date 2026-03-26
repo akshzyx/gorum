@@ -279,3 +279,39 @@ func (r *PostRepository) GetRepliesByUser(ctx context.Context, userID string, li
 
 	return posts, nil
 }
+
+func (r *PostRepository) GetPostsByUserCursor(ctx context.Context, userID string, limit int32, cursor *time.Time) ([]*post.Post, error) {
+	var cursorParam pgtype.Timestamptz
+
+	if cursor != nil {
+		cursorParam = pgtype.Timestamptz{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		cursorParam = pgtype.Timestamptz{
+			Valid: false,
+		}
+	}
+
+	rows, err := r.q.GetPostsByUserCursor(ctx, db.GetPostsByUserCursorParams{
+		UserID:  userID,
+		Column2: cursorParam,
+		Limit:   limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*post.Post
+	for _, row := range rows {
+		posts = append(posts, &post.Post{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Content:   row.Content,
+			CreatedAt: row.CreatedAt.Time,
+		})
+	}
+
+	return posts, nil
+}

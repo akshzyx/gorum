@@ -214,6 +214,55 @@ func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) 
 	return items, nil
 }
 
+const getPostsByUserCursor = `-- name: GetPostsByUserCursor :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NULL
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3
+`
+
+type GetPostsByUserCursorParams struct {
+	UserID  string             `json:"user_id"`
+	Column2 pgtype.Timestamptz `json:"column_2"`
+	Limit   int32              `json:"limit"`
+}
+
+type GetPostsByUserCursorRow struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetPostsByUserCursor(ctx context.Context, arg GetPostsByUserCursorParams) ([]GetPostsByUserCursorRow, error) {
+	rows, err := q.db.Query(ctx, getPostsByUserCursor, arg.UserID, arg.Column2, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsByUserCursorRow
+	for rows.Next() {
+		var i GetPostsByUserCursorRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRepliesByUser = `-- name: GetRepliesByUser :many
 SELECT id, user_id, content, created_at
 FROM posts

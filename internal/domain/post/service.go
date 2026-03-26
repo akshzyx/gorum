@@ -217,3 +217,33 @@ func (s *Service) GetUserPosts(ctx context.Context, userID string, limit int32) 
 func (s *Service) GetUserReplies(ctx context.Context, userID string, limit int32) ([]*Post, error) {
 	return s.repo.GetRepliesByUser(ctx, userID, limit)
 }
+
+func (s *Service) GetUserPostsPaginated(ctx context.Context, userID string, limit int32, cursor string) ([]*Post, string, error) {
+	var cursorTime *time.Time
+
+	if cursor != "" {
+		t, err := time.Parse(time.RFC3339, cursor)
+		if err != nil {
+			return nil, "", err
+		}
+		cursorTime = &t
+	}
+
+	posts, err := s.repo.GetPostsByUserCursor(ctx, userID, limit+1, cursorTime)
+	if err != nil {
+		return nil, "", err
+	}
+
+	hasMore := false
+	if int32(len(posts)) > limit {
+		hasMore = true
+		posts = posts[:limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(posts) > 0 {
+		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+	}
+
+	return posts, nextCursor, nil
+}
