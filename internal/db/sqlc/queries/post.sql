@@ -18,8 +18,9 @@ SELECT id, user_id, content, created_at
 FROM posts
 WHERE deleted_at IS NULL
 AND parent_post_id IS NULL
+AND ($1::timestamptz IS NULL OR created_at < $1)
 ORDER BY created_at DESC
-LIMIT $1;
+LIMIT $2;
 
 -- name: CountReplies :one
 SELECT COUNT(*)

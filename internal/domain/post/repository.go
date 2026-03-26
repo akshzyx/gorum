@@ -1,13 +1,16 @@
 package post
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Repository interface {
 	// Posts
 	Create(ctx context.Context, post *Post) error
 	GetByID(ctx context.Context, id string) (*Post, error)
 	Delete(ctx context.Context, postID string) error
-	ListLatest(ctx context.Context, limit int32) ([]*Post, error)
+	ListLatest(ctx context.Context, limit int32, cursor *time.Time) ([]*Post, error)
 
 	// Replies
 	GetPostForReply(ctx context.Context, id string) (*Post, error)

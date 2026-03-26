@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	db "github.com/akshzyx/gorum/internal/db/sqlc/generated"
 	"github.com/akshzyx/gorum/internal/domain/post"
@@ -44,8 +45,24 @@ func (r *PostRepository) Delete(ctx context.Context, postID string) error {
 	return r.q.DeletePostByID(ctx, postID)
 }
 
-func (r *PostRepository) ListLatest(ctx context.Context, limit int32) ([]*post.Post, error) {
-	rows, err := r.q.ListLatestPosts(ctx, limit)
+func (r *PostRepository) ListLatest(ctx context.Context, limit int32, cursor *time.Time) ([]*post.Post, error) {
+	var cursorParam pgtype.Timestamptz
+
+	if cursor != nil {
+		cursorParam = pgtype.Timestamptz{
+			Time:  *cursor,
+			Valid: true,
+		}
+	} else {
+		cursorParam = pgtype.Timestamptz{
+			Valid: false,
+		}
+	}
+
+	rows, err := r.q.ListLatestPosts(ctx, db.ListLatestPostsParams{
+		Column1: cursorParam,
+		Limit:   limit,
+	})
 	if err != nil {
 		return nil, err
 	}

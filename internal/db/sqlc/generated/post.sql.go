@@ -349,9 +349,15 @@ SELECT id, user_id, content, created_at
 FROM posts
 WHERE deleted_at IS NULL
 AND parent_post_id IS NULL
+AND ($1::timestamptz IS NULL OR created_at < $1)
 ORDER BY created_at DESC
-LIMIT $1
+LIMIT $2
 `
+
+type ListLatestPostsParams struct {
+	Column1 pgtype.Timestamptz `json:"column_1"`
+	Limit   int32              `json:"limit"`
+}
 
 type ListLatestPostsRow struct {
 	ID        string             `json:"id"`
@@ -360,8 +366,8 @@ type ListLatestPostsRow struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
-func (q *Queries) ListLatestPosts(ctx context.Context, limit int32) ([]ListLatestPostsRow, error) {
-	rows, err := q.db.Query(ctx, listLatestPosts, limit)
+func (q *Queries) ListLatestPosts(ctx context.Context, arg ListLatestPostsParams) ([]ListLatestPostsRow, error) {
+	rows, err := q.db.Query(ctx, listLatestPosts, arg.Column1, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
