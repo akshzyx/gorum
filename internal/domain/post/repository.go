@@ -36,4 +36,5 @@ type Repository interface {
 	GetPostsByUser(ctx context.Context, userID string, limit int32) ([]*Post, error)
 	GetRepliesByUser(ctx context.Context, userID string, limit int32) ([]*Post, error)
 	GetPostsByUserCursor(ctx context.Context, userID string, limit int32, cursor *time.Time) ([]*Post, error)
+	GetRepliesByUserCursor(ctx context.Context, userID string, limit int32, cursor *time.Time) ([]*Post, error)
 }

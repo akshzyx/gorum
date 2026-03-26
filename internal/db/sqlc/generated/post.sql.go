@@ -310,6 +310,55 @@ func (q *Queries) GetRepliesByUser(ctx context.Context, arg GetRepliesByUserPara
 	return items, nil
 }
 
+const getRepliesByUserCursor = `-- name: GetRepliesByUserCursor :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NOT NULL
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3
+`
+
+type GetRepliesByUserCursorParams struct {
+	UserID  string             `json:"user_id"`
+	Column2 pgtype.Timestamptz `json:"column_2"`
+	Limit   int32              `json:"limit"`
+}
+
+type GetRepliesByUserCursorRow struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetRepliesByUserCursor(ctx context.Context, arg GetRepliesByUserCursorParams) ([]GetRepliesByUserCursorRow, error) {
+	rows, err := q.db.Query(ctx, getRepliesByUserCursor, arg.UserID, arg.Column2, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRepliesByUserCursorRow
+	for rows.Next() {
+		var i GetRepliesByUserCursorRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRepliesCountByPostIDs = `-- name: GetRepliesCountByPostIDs :many
 SELECT parent_post_id AS post_id, COUNT(*) AS count
 FROM posts

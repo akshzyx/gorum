@@ -102,7 +102,16 @@ func (h *UserHandler) GetUserReplies(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := h.postService.GetUserReplies(r.Context(), u.ID, 20)
+	limit := int32(20)
+	cursor := r.URL.Query().Get("cursor")
+
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil {
+			limit = int32(v)
+		}
+	}
+
+	posts, nextCursor, err := h.postService.GetUserRepliesPaginated(r.Context(), u.ID, limit, cursor)
 	if err != nil {
 		util.InternalServerError(w, r, err)
 		return
@@ -116,5 +125,9 @@ func (h *UserHandler) GetUserReplies(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":        resp,
+		"next_cursor": nextCursor,
+		"has_more":    nextCursor != "",
+	})
 }

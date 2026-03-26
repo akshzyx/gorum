@@ -92,3 +92,13 @@ AND deleted_at IS NULL
 AND ($2::timestamptz IS NULL OR created_at < $2)
 ORDER BY created_at DESC
 LIMIT $3;
+
+-- name: GetRepliesByUserCursor :many
+SELECT id, user_id, content, created_at
+FROM posts
+WHERE user_id = $1
+AND parent_post_id IS NOT NULL
+AND deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR created_at < $2)
+ORDER BY created_at DESC
+LIMIT $3;
