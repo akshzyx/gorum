@@ -9,13 +9,17 @@ func CORS(next http.Handler) http.Handler {
 	frontendURL := os.Getenv("FRONTEND_URL")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", frontendURL)
+		origin := r.Header.Get("Origin")
+
+		if origin == frontendURL {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+
 		w.Header().Set("Vary", "Origin")
 
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 
-		// future-proof (for cookies later)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == http.MethodOptions {
