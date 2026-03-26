@@ -1,15 +1,13 @@
-# -----------------------------
-# GO BUILD FILES
-# -----------------------------
+# GO (BACKEND)
 /bin/
 /build/
 /dist/
+
 /tmp/
 /tmp/*
+/backend/tmp/
 
-# -----------------------------
-# GO BINARY OUTPUT
-# -----------------------------
+# Go binaries
 *.exe
 *.exe~
 *.dll
@@ -17,42 +15,52 @@
 *.dylib
 *.test
 
-# -----------------------------
-# GO CHECKSUMS / OUTPUT
-# -----------------------------
+# Output / coverage
 *.out
 
-# -----------------------------
+
+# NODE / FRONTEND (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.turbo/
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+
 # ENVIRONMENT & CONFIG
-# -----------------------------
 .env
 .env.local
 .env.*
 !.env.example
 
-# Misc
+
+# GENERAL
 test.md
-
-# -----------------------------
-# LIVE RELOAD (AIR)
-# -----------------------------
-.air
-.air.toml
-
-# -----------------------------
-# LOGS
-# -----------------------------
 *.log
 logs/
 
-# -----------------------------
+
 # IDE / EDITOR
-# -----------------------------
 .vscode/
 .idea/
 *.swp
 
-# -----------------------------
+
+# LIVE RELOAD (AIR)
+.air
+.air.toml
+
+
 # DOCKER
-# -----------------------------
 /volumes/
+
+
+# OS FILES
+.DS_Store
+Thumbs.db
