@@ -69,11 +69,18 @@ func (q *Queries) GetPostForReply(ctx context.Context, id string) (GetPostForRep
 }
 
 const getThread = `-- name: GetThread :many
-SELECT id, user_id, content, parent_post_id, created_at
+SELECT 
+    posts.id,
+    posts.user_id,
+    posts.content,
+    posts.parent_post_id,
+    posts.created_at,
+    users.username
 FROM posts
-WHERE (id = $1 OR root_post_id = $1)
-AND deleted_at IS NULL
-ORDER BY created_at ASC
+JOIN users ON users.id = posts.user_id
+WHERE (posts.id = $1 OR posts.root_post_id = $1)
+AND posts.deleted_at IS NULL
+ORDER BY posts.created_at ASC
 `
 
 type GetThreadRow struct {
@@ -82,6 +89,7 @@ type GetThreadRow struct {
 	Content      string             `json:"content"`
 	ParentPostID pgtype.Text        `json:"parent_post_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Username     string             `json:"username"`
 }
 
 func (q *Queries) GetThread(ctx context.Context, id string) ([]GetThreadRow, error) {
@@ -99,6 +107,7 @@ func (q *Queries) GetThread(ctx context.Context, id string) ([]GetThreadRow, err
 			&i.Content,
 			&i.ParentPostID,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}

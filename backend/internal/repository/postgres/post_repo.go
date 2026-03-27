@@ -184,6 +184,7 @@ func (r *PostRepository) GetThread(ctx context.Context, rootID string) ([]*post.
 		posts = append(posts, &post.Post{
 			ID:           row.ID,
 			UserID:       row.UserID,
+			Username:     row.Username,
 			Content:      row.Content,
 			ParentPostID: parentID,
 			CreatedAt:    row.CreatedAt.Time,
