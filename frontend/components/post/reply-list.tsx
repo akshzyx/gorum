@@ -87,9 +87,9 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
         {/* ACTIONS */}
         <div className="flex gap-4 text-[10px] text-neutral-500 mt-2 font-mono">
           <span className="cursor-pointer hover:text-green-400">[ REPLY ]</span>
-          <span className="cursor-pointer hover:text-green-400">
+          {/* <span className="cursor-pointer hover:text-green-400">
             [ VOTE_UP ]
-          </span>
+          </span> */}
         </div>
       </div>
 
