@@ -41,7 +41,7 @@ function buildTree(replies: Reply[], rootID: string) {
   return roots;
 }
 
-// 🔥 check if subtree contains target
+// check if subtree contains target
 function containsTarget(node: Reply, targetId: string | null): boolean {
   if (!targetId) return false;
   if (node.id === targetId) return true;
@@ -74,7 +74,7 @@ function ReplyNode({
 
   const isActive = activeReplyId === reply.id;
 
-  // 🔥 AUTO OPEN PATH TO TARGET
+  // AUTO OPEN PATH TO TARGET
   useEffect(() => {
     if (hasTarget) {
       setCollapsed(false);
@@ -82,7 +82,7 @@ function ReplyNode({
     }
   }, [hasTarget]);
 
-  // 🔥 SCROLL ONLY ONCE
+  // SCROLL ONLY ONCE
   useEffect(() => {
     if (targetId === reply.id && ref.current && !hasScrolled.current) {
       hasScrolled.current = true;
@@ -94,7 +94,7 @@ function ReplyNode({
     }
   }, [targetId, reply.id]);
 
-  // 🔥 SHOW TARGET EVEN IF HIDDEN
+  // SHOW TARGET EVEN IF HIDDEN
   let visibleChildren = expanded ? children : children.slice(0, VISIBLE_COUNT);
 
   if (!expanded && targetId) {
