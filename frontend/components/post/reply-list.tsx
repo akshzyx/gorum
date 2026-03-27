@@ -41,10 +41,18 @@ function getLineColor(depth: number) {
 }
 
 function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const children = reply.children || [];
   const hasChildren = children.length > 0;
+
+  const VISIBLE_COUNT = 2;
+
+  const visibleChildren = expanded
+    ? children
+    : children.slice(0, VISIBLE_COUNT);
+
+  const hiddenCount = children.length - VISIBLE_COUNT;
 
   return (
     <div className="relative pl-6">
@@ -55,13 +63,9 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
       />
 
       {/* NODE */}
-      <div
-        className="group hover:bg-neutral-900/40 p-2 transition cursor-pointer"
-        onClick={() => hasChildren && setExpanded((p) => !p)}
-      >
+      <div className="group hover:bg-neutral-900/40 p-2 transition cursor-pointer">
         {/* HEADER */}
         <div className="flex items-center gap-3 text-xs font-mono">
-          {/* SYMBOL */}
           <span className="text-green-400 w-4">
             {!hasChildren ? "[·]" : expanded ? "[-]" : "[+]"}
           </span>
@@ -80,26 +84,40 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
           {reply.content}
         </div>
 
-        {/* ACTIONS (UPDATED ICONS + FORMAT) */}
+        {/* ACTIONS */}
         <div className="flex gap-4 text-[10px] text-neutral-500 mt-2 font-mono">
-          <span className="flex items-center gap-2 cursor-pointer hover:text-green-400">
-            <i className="fa-regular fa-reply" />
-            REPLY
-          </span>
-
-          <span className="flex items-center gap-2 cursor-pointer hover:text-green-400">
-            <i className="fa-regular fa-thumbs-up" />
-            VOTE_UP
+          <span className="cursor-pointer hover:text-green-400">[ REPLY ]</span>
+          <span className="cursor-pointer hover:text-green-400">
+            [ VOTE_UP ]
           </span>
         </div>
       </div>
 
       {/* CHILDREN */}
-      {expanded && hasChildren && (
+      {hasChildren && (
         <div className="mt-4 flex flex-col gap-4">
-          {children.map((child) => (
+          {visibleChildren.map((child) => (
             <ReplyNode key={child.id} reply={child} depth={depth + 1} />
           ))}
+
+          {/* EXPAND / COLLAPSE */}
+          {!expanded && hiddenCount > 0 && (
+            <div
+              className="font-mono text-[10px] text-neutral-400 cursor-pointer hover:text-green-400"
+              onClick={() => setExpanded(true)}
+            >
+              [+] EXPAND ({hiddenCount} HIDDEN_NODES)
+            </div>
+          )}
+
+          {expanded && hiddenCount > 0 && (
+            <div
+              className="font-mono text-[10px] text-neutral-400 cursor-pointer hover:text-green-400"
+              onClick={() => setExpanded(false)}
+            >
+              [-] COLLAPSE
+            </div>
+          )}
         </div>
       )}
     </div>
