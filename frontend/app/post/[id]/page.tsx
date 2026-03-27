@@ -28,8 +28,10 @@ export default function Page() {
     if (!id) return;
 
     getThread(id as string).then((res) => {
-      setPost(res.thread[0]);
-      setReplies(res.thread.slice(1));
+      const rootPost = res.thread.find((p: any) => p.id === id);
+
+      setPost(rootPost);
+      setReplies(res.thread.filter((p: any) => p.id !== id));
       setTargetId(res.target_id);
     });
   }, [id]);

@@ -25,7 +25,12 @@ export async function getPostById(id: string) {
 }
 
 export async function getThread(id: string) {
-  const res = await fetch(`${BASE_URL}/post/${id}/thread`);
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/thread`,
+    {
+      credentials: "include",
+    },
+  );
 
   const data = await res.json();
 
@@ -35,7 +40,7 @@ export async function getThread(id: string) {
   };
 }
 
-// UPDATED: supports nested replies
+// supports nested replies
 export async function createReply(
   postId: string,
   content: string,
