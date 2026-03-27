@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { likePost, unlikePost } from "@/lib/api";
 
 type Post = {
   id: string;
@@ -11,6 +12,7 @@ type Post = {
   created_at: string;
   reply_count: number;
   likes: number;
+  liked?: boolean;
 };
 
 export default function PostCard({ post }: { post: Post }) {
@@ -18,6 +20,8 @@ export default function PostCard({ post }: { post: Post }) {
 
   const [copied, setCopied] = useState(false);
   const [timeAgo, setTimeAgo] = useState("");
+  const [liked, setLiked] = useState(post.liked || false);
+  const [likes, setLikes] = useState(post.likes);
 
   useEffect(() => {
     const date = new Date(post.created_at);
@@ -33,7 +37,7 @@ export default function PostCard({ post }: { post: Post }) {
 
     updateTime();
 
-    const interval = setInterval(updateTime, 60000); // update every min
+    const interval = setInterval(updateTime, 60000);
 
     return () => clearInterval(interval);
   }, [post.created_at]);
@@ -45,6 +49,29 @@ export default function PostCard({ post }: { post: Post }) {
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const prevLiked = liked;
+    const prevLikes = likes;
+
+    // optimistic update
+    setLiked(!liked);
+    setLikes(liked ? likes - 1 : likes + 1);
+
+    try {
+      if (!prevLiked) {
+        await likePost(post.id);
+      } else {
+        await unlikePost(post.id);
+      }
+    } catch {
+      // rollback
+      setLiked(prevLiked);
+      setLikes(prevLikes);
+    }
   };
 
   return (
@@ -89,11 +116,15 @@ export default function PostCard({ post }: { post: Post }) {
           </span>
 
           <span
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-2 cursor-pointer hover:text-green-400"
+            onClick={handleLike}
+            className={`flex items-center gap-2 cursor-pointer ${
+              liked ? "text-green-400" : "hover:text-green-400"
+            }`}
           >
-            <i className="fa-regular fa-thumbs-up" />
-            VOTE_UP [{post.likes}]
+            <i
+              className={`${liked ? "fa-solid" : "fa-regular"} fa-thumbs-up`}
+            />
+            VOTE_UP [{likes}]
           </span>
         </div>
 

@@ -11,6 +11,13 @@ import FeedList from "@/components/feed/feed-list";
 export default function Page() {
   const [open, setOpen] = useState(false);
 
+  // trigger to refresh feed
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handlePost = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white">
       <Navbar onMenuClick={() => setOpen(true)} />
@@ -19,8 +26,11 @@ export default function Page() {
       <main className="pt-16 md:ml-[180px] flex justify-center">
         <div className="w-full max-w-2xl flex flex-col gap-6 px-4">
           <FeedHeader />
-          <ComposeBox />
-          <FeedList />
+
+          <ComposeBox onPost={handlePost} />
+
+          {/* force remount to refresh */}
+          <FeedList key={refreshKey} />
         </div>
       </main>
     </div>

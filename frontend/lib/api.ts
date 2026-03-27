@@ -94,3 +94,44 @@ export async function logout() {
     throw new Error("logout failed");
   }
 }
+
+export async function createPost(content: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/post`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!res.ok) {
+    throw new Error("failed to create post");
+  }
+
+  return res.json();
+}
+
+export async function likePost(id: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/like`,
+    {
+      method: "POST",
+      credentials: "include",
+    },
+  );
+
+  if (!res.ok) throw new Error("like failed");
+}
+
+export async function unlikePost(id: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/like`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    },
+  );
+
+  if (!res.ok) throw new Error("unlike failed");
+}

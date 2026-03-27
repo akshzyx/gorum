@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createReply } from "@/lib/api";
 
 export default function ReplyBox({
   postId,
@@ -28,7 +29,9 @@ export default function ReplyBox({
 
   const send = async () => {
     if (!text.trim()) return;
-    console.log(text);
+
+    await createReply(postId, text);
+
     setText("");
     onSuccess?.();
   };

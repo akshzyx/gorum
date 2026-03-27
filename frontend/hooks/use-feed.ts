@@ -45,5 +45,12 @@ export function useFeed() {
     }
   };
 
-  return { posts, load, hasMore, loading };
+  // ADD THIS
+  const refresh = async () => {
+    setPosts([]);
+    setCursor(null);
+    setHasMore(true);
+  };
+
+  return { posts, load, hasMore, loading, refresh };
 }
