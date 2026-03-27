@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
 import PostCard from "@/components/feed/post-card";
-import Image from "next/image";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -108,7 +107,7 @@ export default function ProfilePage() {
               {/* AVATAR */}
               <div className="w-24 h-24 border border-green-400">
                 {user.avatar_url ? (
-                  <Image
+                  <img
                     src={user.avatar_url}
                     alt="avatar"
                     className="w-full h-full object-cover"
