@@ -143,3 +143,18 @@ func (h *AuthHandler) ResendActivation(w http.ResponseWriter, r *http.Request) {
 		"status": "activation email resent",
 	})
 }
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	// clear cookie by expiring it
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+
+	util.WriteJSON(w, http.StatusOK, map[string]string{
+		"status": "logged out",
+	})
+}

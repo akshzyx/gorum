@@ -12,6 +12,7 @@ func AuthRoutes(h *handlers.AuthHandler) chi.Router {
 	r.Post("/login", h.Login)
 	r.Post("/activate", h.Activate)
 	r.Post("/resend-activation", h.ResendActivation)
+	r.Post("/logout", h.Logout)
 
 	return r
 }
