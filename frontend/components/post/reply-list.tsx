@@ -164,12 +164,12 @@ function ReplyNode({
             [ REPLY ]
           </span>
 
-          <span
+          {/* <span
             onClick={handleCopy}
             className="cursor-pointer hover:text-green-400"
           >
             [ PROPAGATE ]
-          </span>
+          </span> */}
         </div>
 
         {isActive && (

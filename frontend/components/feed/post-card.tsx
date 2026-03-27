@@ -92,8 +92,8 @@ export default function PostCard({ post }: { post: Post }) {
             onClick={(e) => e.stopPropagation()}
             className="flex items-center gap-2 cursor-pointer hover:text-green-400"
           >
-            <i className="fa-regular fa-heart" />
-            LIKE [{post.likes}]
+            <i className="fa-regular fa-thumbs-up" />
+            VOTE_UP [{post.likes}]
           </span>
         </div>
 
