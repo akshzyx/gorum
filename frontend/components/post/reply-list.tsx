@@ -48,7 +48,7 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
 
   return (
     <div className="relative pl-6">
-      {/* 🔥 CONTINUOUS LINE (NOW ALSO FOR ROOT) */}
+      {/* CONTINUOUS LINE */}
       <div
         className="absolute left-2 top-0 bottom-0 w-[2px]"
         style={{ backgroundColor: getLineColor(depth) }}
@@ -80,10 +80,17 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
           {reply.content}
         </div>
 
-        {/* ACTIONS */}
+        {/* ACTIONS (UPDATED ICONS + FORMAT) */}
         <div className="flex gap-4 text-[10px] text-neutral-500 mt-2 font-mono">
-          <span className="hover:text-green-400">[ REPLY ]</span>
-          <span className="hover:text-green-400">[ VOTE_UP ]</span>
+          <span className="flex items-center gap-2 cursor-pointer hover:text-green-400">
+            <i className="fa-regular fa-reply" />
+            REPLY
+          </span>
+
+          <span className="flex items-center gap-2 cursor-pointer hover:text-green-400">
+            <i className="fa-regular fa-thumbs-up" />
+            VOTE_UP
+          </span>
         </div>
       </div>
 

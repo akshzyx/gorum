@@ -40,15 +40,20 @@ func main() {
 
 	users := seedUsers(ctx, userRepo, queries, r)
 	posts := seedPostsBatch(ctx, pool, users, r)
-	seedRepliesBatch(ctx, pool, users, posts, r)
-	seedLikes(ctx, postRepo, users, posts, r)
+
+	// replies now returned so we can like them too
+	replies := seedRepliesBatch(ctx, pool, users, posts, r)
+
+	// merge posts + replies for likes
+	allPostIDs := append(posts, replies...)
+
+	seedLikes(ctx, postRepo, users, allPostIDs, r)
 
 	fmt.Println("✅ Seeding complete!")
 	fmt.Println("⏱ Total time:", time.Since(start))
 }
 
 func randomTime(r *rand.Rand) time.Time {
-	// last 30 days
 	return time.Now().Add(-time.Duration(r.Intn(720)) * time.Hour)
 }
 
@@ -66,7 +71,6 @@ func seedUsers(ctx context.Context, repo *postgres.UserRepository, q *db.Queries
 		"ship fast mindset", "open source lover", "learning everyday", "just vibes ✨",
 	}
 
-	// hash once (major speed boost)
 	hash, _ := util.HashPassword("password123")
 
 	for i := 0; i < 30; i++ {
@@ -105,7 +109,6 @@ var samplePosts = []string{
 	"clean architecture >>", "why is this not working", "ship fast", "just deployed 🔥",
 }
 
-// batch insert posts
 func seedPostsBatch(ctx context.Context, pool *pgxpool.Pool, users []string, r *rand.Rand) []string {
 	start := time.Now()
 
@@ -147,9 +150,9 @@ var sampleReplies = []string{
 	"this is underrated", "good point!", "what do you mean?", "🔥🔥🔥",
 }
 
-// recursive threads (better graph)
+// deeper recursion up to 10 levels
 func generateRepliesRecursive(users []string, rootID string, parentID string, depth int, r *rand.Rand, out *[]post.Post) {
-	if depth > 4 {
+	if depth > 10 {
 		return
 	}
 
@@ -157,10 +160,10 @@ func generateRepliesRecursive(users []string, rootID string, parentID string, de
 
 	if depth == 0 {
 		numReplies = r.Intn(11) + 10
-	} else if depth == 1 {
+	} else if depth <= 2 {
 		numReplies = r.Intn(5) + 2
 	} else {
-		numReplies = r.Intn(3)
+		numReplies = r.Intn(2)
 	}
 
 	for i := 0; i < numReplies; i++ {
@@ -176,13 +179,14 @@ func generateRepliesRecursive(users []string, rootID string, parentID string, de
 
 		*out = append(*out, p)
 
+		// deeper threads but controlled
 		var continueChance int
 		if depth == 0 {
-			continueChance = 60
-		} else if depth == 1 {
-			continueChance = 40
+			continueChance = 70
+		} else if depth <= 2 {
+			continueChance = 50
 		} else {
-			continueChance = 20
+			continueChance = 30
 		}
 
 		if r.Intn(100) < continueChance {
@@ -191,10 +195,12 @@ func generateRepliesRecursive(users []string, rootID string, parentID string, de
 	}
 }
 
-func seedRepliesBatch(ctx context.Context, pool *pgxpool.Pool, users, posts []string, r *rand.Rand) {
+// now returns reply IDs
+func seedRepliesBatch(ctx context.Context, pool *pgxpool.Pool, users, posts []string, r *rand.Rand) []string {
 	start := time.Now()
 
 	var allReplies []post.Post
+	var replyIDs []string
 
 	for _, postID := range posts {
 		if r.Intn(100) > 30 {
@@ -210,6 +216,8 @@ func seedRepliesBatch(ctx context.Context, pool *pgxpool.Pool, users, posts []st
 			 VALUES ($1, $2, $3, $4, $5)`,
 			p.ID, p.UserID, p.Content, *p.ParentPostID, *p.RootPostID,
 		)
+
+		replyIDs = append(replyIDs, p.ID)
 	}
 
 	br := pool.SendBatch(ctx, batch)
@@ -223,17 +231,19 @@ func seedRepliesBatch(ctx context.Context, pool *pgxpool.Pool, users, posts []st
 	}
 
 	fmt.Println("💬 replies:", len(allReplies), "⏱", time.Since(start))
+	return replyIDs
 }
 
-func seedLikes(ctx context.Context, repo *postgres.PostRepository, users, posts []string, r *rand.Rand) {
+// now likes apply to posts + replies
+func seedLikes(ctx context.Context, repo *postgres.PostRepository, users, postIDs []string, r *rand.Rand) {
 	start := time.Now()
 	total := 0
 
 	for _, userID := range users {
-		n := r.Intn(10) + 5
+		n := r.Intn(15) + 5
 
 		for i := 0; i < n; i++ {
-			postID := posts[r.Intn(len(posts))]
+			postID := postIDs[r.Intn(len(postIDs))]
 
 			if err := repo.CreateLike(ctx, userID, postID); err == nil {
 				total++
