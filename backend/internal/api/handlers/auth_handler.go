@@ -68,6 +68,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// set auth cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    resp.Token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
 	util.WriteJSON(w, http.StatusOK, resp)
 }
 

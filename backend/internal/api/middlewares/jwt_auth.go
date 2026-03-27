@@ -13,18 +13,32 @@ type contextKey string
 
 const UserIDKey contextKey = "user_id"
 
-// helper: extracts userID from Authorization header
-func extractUserFromHeader(r *http.Request) (string, error) {
+// helper: extracts token from Authorization header OR cookie
+func extractToken(r *http.Request) (string, error) {
+	// 1. Try Authorization header
 	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return "", errors.New("missing authorization token")
+	if authHeader != "" {
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			return "", errors.New("invalid authorization header")
+		}
+		return strings.TrimPrefix(authHeader, "Bearer "), nil
 	}
 
-	if !strings.HasPrefix(authHeader, "Bearer ") {
-		return "", errors.New("invalid authorization header")
+	// 2. Try cookie
+	cookie, err := r.Cookie("token")
+	if err == nil && cookie.Value != "" {
+		return cookie.Value, nil
 	}
 
-	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	return "", errors.New("missing auth token")
+}
+
+// helper: extracts userID from token
+func extractUser(r *http.Request) (string, error) {
+	tokenStr, err := extractToken(r)
+	if err != nil {
+		return "", err
+	}
 
 	claims, err := util.ValidateJWT(tokenStr)
 	if err != nil {
@@ -39,41 +53,41 @@ func extractUserFromHeader(r *http.Request) (string, error) {
 	return userID, nil
 }
 
-// OptionalAuth attaches user to context if token is present.
-// If no token is provided, request continues as unauthenticated.
+// OptionalAuth attaches user to context if token is present
 func OptionalAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			// No token → treat as guest request
+		tokenStr, err := extractToken(r)
+		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		userID, err := extractUserFromHeader(r)
+		claims, err := util.ValidateJWT(tokenStr)
 		if err != nil {
-			// Token exists but is invalid → unauthorized
 			util.Unauthorized(w, r, err)
 			return
 		}
 
-		// Attach user ID to request context
+		userID, err := util.ExtractUserID(claims)
+		if err != nil {
+			util.Unauthorized(w, r, err)
+			return
+		}
+
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-// RequireAuth enforces authentication.
-// Request is rejected if token is missing or invalid.
+// RequireAuth enforces authentication
 func RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID, err := extractUserFromHeader(r)
+		userID, err := extractUser(r)
 		if err != nil {
 			util.Unauthorized(w, r, err)
 			return
 		}
 
-		// At this point user is guaranteed to be authenticated
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
