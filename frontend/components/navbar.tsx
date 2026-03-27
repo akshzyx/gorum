@@ -13,57 +13,45 @@ type User = {
   avatar_url?: string | null;
 };
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }: { onMenuClick: () => void }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/me`, {
-          credentials: "include",
-        });
-
-        if (!res.ok) {
-          setUser(null);
-          return;
-        }
-
-        const data = await res.json();
-        setUser(data);
-      } catch (err) {
-        console.error(err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUser();
+    fetch(`${BASE_URL}/me`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setUser(d))
+      .catch(() => setUser(null));
   }, []);
 
-  const avatarUrl = user?.avatar_url || null;
+  const avatarUrl = user?.avatar_url;
 
   return (
-    <nav className="fixed top-0 w-full border-b border-neutral-800 bg-[#0e0e0e] flex justify-between items-center h-14 px-6 z-50">
-      {/* LOGO */}
-      <Link href="/" className="text-xl font-bold text-green-400">
-        GORUM
-      </Link>
+    <nav className="fixed top-0 w-full h-14 border-b border-neutral-800 bg-[#0e0e0e] flex items-center justify-between px-4 md:px-6 z-50">
+      {/* LEFT */}
+      <div className="flex items-center gap-4">
+        {/* HAMBURGER */}
+        <i
+          onClick={onMenuClick}
+          className="fa-solid fa-bars text-neutral-400 md:hidden cursor-pointer"
+        />
 
-      {/* EMPTY CENTER */}
-      <div />
+        <Link href="/" className="text-lg md:text-xl font-bold text-green-400">
+          GORUM
+        </Link>
+      </div>
 
-      {/* PROFILE */}
+      {/* RIGHT */}
       <div
         onClick={() => router.push("/profile")}
-        className="group w-9 h-9 border border-green-400 flex items-center justify-center cursor-pointer hover:bg-green-400 hover:text-black transition-none overflow-hidden"
+        className="group w-8 h-8 md:w-9 md:h-9 border border-green-400 flex items-center justify-center cursor-pointer hover:bg-green-400 overflow-hidden"
       >
-        {!loading && avatarUrl ? (
+        {avatarUrl ? (
           <Image
             src={avatarUrl}
             alt="avatar"
+            width={40}
+            height={40}
             className="w-full h-full object-cover"
           />
         ) : (

@@ -49,18 +49,10 @@ function ReplyNode({
   setActiveReplyId,
   postId,
 }: any) {
-  const [expanded, setExpanded] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const children = reply.children || [];
   const hasChildren = children.length > 0;
-
-  const VISIBLE_COUNT = 2;
-
-  const visibleChildren = expanded
-    ? children
-    : children.slice(0, VISIBLE_COUNT);
-
-  const hiddenCount = children.length - VISIBLE_COUNT;
 
   const isActive = activeReplyId === reply.id;
 
@@ -72,12 +64,17 @@ function ReplyNode({
         style={{ backgroundColor: getLineColor(depth) }}
       />
 
-      {/* NODE */}
-      <div className="group hover:bg-neutral-900/40 p-2 transition">
+      {/* NODE (CLICKABLE) */}
+      <div
+        onClick={() => {
+          if (hasChildren) setCollapsed((prev: boolean) => !prev);
+        }}
+        className="group hover:bg-neutral-900/40 p-2 transition cursor-pointer"
+      >
         {/* HEADER */}
         <div className="flex items-center gap-3 text-xs font-mono">
           <span className="text-green-400 w-4">
-            {!hasChildren ? "[·]" : expanded ? "[-]" : "[+]"}
+            {!hasChildren ? "[·]" : collapsed ? "[+]" : "[-]"}
           </span>
 
           <span className="text-green-400 font-bold">
@@ -93,7 +90,10 @@ function ReplyNode({
         <div className="text-sm text-neutral-200 mt-2">{reply.content}</div>
 
         {/* ACTIONS */}
-        <div className="flex gap-4 text-[10px] text-neutral-500 mt-2 font-mono">
+        <div
+          className="flex gap-4 text-[10px] text-neutral-500 mt-2 font-mono"
+          onClick={(e) => e.stopPropagation()} // 🔥 IMPORTANT
+        >
           <span
             onClick={() => setActiveReplyId(isActive ? null : reply.id)}
             className="cursor-pointer hover:text-green-400"
@@ -102,22 +102,24 @@ function ReplyNode({
           </span>
         </div>
 
-        {/* 🔥 INLINE REPLY BOX */}
+        {/* INLINE REPLY BOX */}
         {isActive && (
-          <ReplyBox
-            postId={postId}
-            parentId={reply.id}
-            small
-            placeholder={`REPLYING TO @${reply.username || reply.user_id}...`}
-            onSuccess={() => window.location.reload()}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <ReplyBox
+              postId={postId}
+              parentId={reply.id}
+              small
+              placeholder={`REPLYING TO @${reply.username || reply.user_id}...`}
+              onSuccess={() => window.location.reload()}
+            />
+          </div>
         )}
       </div>
 
       {/* CHILDREN */}
-      {hasChildren && (
-        <div className="mt-4 flex flex-col gap-4">
-          {visibleChildren.map((child) => (
+      {!collapsed && hasChildren && (
+        <div className="mt-3 flex flex-col gap-3">
+          {children.map((child) => (
             <ReplyNode
               key={child.id}
               reply={child}
@@ -127,24 +129,6 @@ function ReplyNode({
               postId={postId}
             />
           ))}
-
-          {!expanded && hiddenCount > 0 && (
-            <div
-              className="text-[10px] text-neutral-400 cursor-pointer hover:text-green-400 font-mono"
-              onClick={() => setExpanded(true)}
-            >
-              [+] EXPAND ({hiddenCount} HIDDEN_NODES)
-            </div>
-          )}
-
-          {expanded && hiddenCount > 0 && (
-            <div
-              className="text-[10px] text-neutral-400 cursor-pointer hover:text-green-400 font-mono"
-              onClick={() => setExpanded(false)}
-            >
-              [-] COLLAPSE
-            </div>
-          )}
         </div>
       )}
     </div>
