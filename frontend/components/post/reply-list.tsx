@@ -41,6 +41,13 @@ function buildTree(replies: Reply[], rootID: string) {
   return roots;
 }
 
+// 🔥 check if subtree contains target
+function containsTarget(node: Reply, targetId: string | null): boolean {
+  if (!targetId) return false;
+  if (node.id === targetId) return true;
+  return (node.children || []).some((child) => containsTarget(child, targetId));
+}
+
 function getLineColor(depth: number) {
   const opacity = Math.max(1 - depth * 0.25, 0.2);
   return `rgba(74, 222, 128, ${opacity})`;
@@ -54,24 +61,28 @@ function ReplyNode({
   postId,
   targetId,
 }: any) {
+  const hasTarget = containsTarget(reply, targetId);
+
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   const ref = useRef<HTMLDivElement>(null);
+  const hasScrolled = useRef(false);
 
   const children = reply.children || [];
   const hasChildren = children.length > 0;
 
   const isActive = activeReplyId === reply.id;
 
-  const visibleChildren = expanded
-    ? children
-    : children.slice(0, VISIBLE_COUNT);
+  // 🔥 AUTO OPEN PATH TO TARGET
+  useEffect(() => {
+    if (hasTarget) {
+      setCollapsed(false);
+      setExpanded(true);
+    }
+  }, [hasTarget]);
 
-  const hiddenCount = children.length - VISIBLE_COUNT;
-
-  const hasScrolled = useRef(false);
-
+  // 🔥 SCROLL ONLY ONCE
   useEffect(() => {
     if (targetId === reply.id && ref.current && !hasScrolled.current) {
       hasScrolled.current = true;
@@ -82,6 +93,19 @@ function ReplyNode({
       });
     }
   }, [targetId, reply.id]);
+
+  // 🔥 SHOW TARGET EVEN IF HIDDEN
+  let visibleChildren = expanded ? children : children.slice(0, VISIBLE_COUNT);
+
+  if (!expanded && targetId) {
+    const targetChild = children.find((c) => containsTarget(c, targetId));
+
+    if (targetChild && !visibleChildren.find((c) => c.id === targetChild.id)) {
+      visibleChildren = [...visibleChildren, targetChild];
+    }
+  }
+
+  const hiddenCount = children.length - visibleChildren.length;
 
   const handleCopy = (e: any) => {
     e.stopPropagation();
@@ -102,12 +126,12 @@ function ReplyNode({
           if (hasChildren) setCollapsed((p) => !p);
         }}
         className={`group p-2 transition cursor-pointer
-  ${
-    targetId === reply.id
-      ? "bg-green-400/10 border border-green-400"
-      : "hover:bg-neutral-900/40"
-  }
-`}
+          ${
+            targetId === reply.id
+              ? "bg-green-400/10 border border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.2)]"
+              : "hover:bg-neutral-900/40"
+          }
+        `}
       >
         <div className="flex items-center gap-3 text-xs font-mono">
           <span className="text-green-400 w-4">
