@@ -56,3 +56,30 @@ export async function createReply(postId: string, content: string) {
 
   return res.json();
 }
+
+export async function login(email: string, password: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    throw new Error("invalid credentials");
+  }
+
+  return res.json();
+}
+
+export async function getMe() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/me`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) return null;
+
+  return res.json();
+}
