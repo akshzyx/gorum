@@ -41,20 +41,24 @@ export default function Page() {
       <Navbar />
       <Sidebar />
 
-      <main className="pt-20 md:pl-64 flex justify-center pb-32">
-        <div className="w-full max-w-3xl flex flex-col gap-10 px-4">
-          <div className="text-xs text-neutral-500 font-mono">
+      <main className="pt-16 md:ml-[180px] flex justify-center pb-24">
+        <div className="w-full max-w-2xl flex flex-col gap-6 px-4">
+          {/* HEADER */}
+          <div className="text-[10px] text-neutral-500 font-mono border-b border-neutral-800 pb-2 tracking-wider">
             LOCAL_FS / THREAD_ID: {id} /{" "}
             <span className="text-green-400">LIVE_VIEW</span>
           </div>
 
+          {/* POST */}
           <PostDetail post={post} />
 
+          {/* REPLY BOX */}
           <ReplyBox
             postId={id as string}
             onSuccess={() => window.location.reload()}
           />
 
+          {/* REPLIES */}
           <ReplyList replies={replies} postId={id as string} />
         </div>
       </main>
