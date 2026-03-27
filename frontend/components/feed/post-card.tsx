@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 type Post = {
@@ -13,6 +14,8 @@ type Post = {
 };
 
 export default function PostCard({ post }: { post: Post }) {
+  const router = useRouter();
+
   const [copied, setCopied] = useState(false);
   const [timeAgo, setTimeAgo] = useState("");
 
@@ -36,7 +39,6 @@ export default function PostCard({ post }: { post: Post }) {
   }, [post.created_at]);
 
   const handleShare = async (e: React.MouseEvent) => {
-    e.preventDefault(); // prevent navigation
     e.stopPropagation();
 
     const url = `${window.location.origin}/post/${post.id}`;
@@ -46,65 +48,60 @@ export default function PostCard({ post }: { post: Post }) {
   };
 
   return (
-    <Link href={`/post/${post.id}`}>
-      <div className="border border-neutral-700 p-4 flex flex-col gap-3 bg-black hover:bg-neutral-900 transition cursor-pointer">
-        <div className="flex justify-between items-start">
-          <Link
-            href={`/user/${post.username}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-green-400 text-xs font-bold hover:underline"
-          >
-            @{post.username}
-          </Link>
+    <div
+      onClick={() => router.push(`/post/${post.id}`)}
+      className="border border-neutral-700 p-4 flex flex-col gap-3 bg-black hover:bg-neutral-900 transition cursor-pointer"
+    >
+      <div className="flex justify-between items-start">
+        <Link
+          href={`/user/${post.username}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-green-400 text-xs font-bold hover:underline"
+        >
+          @{post.username}
+        </Link>
 
-          <div
-            className="text-xs text-neutral-500 cursor-default"
-            title={new Date(post.created_at).toLocaleString()}
-          >
-            {timeAgo}
-          </div>
-        </div>
-
-        <div className="border-l-2 border-green-400 pl-3 text-sm leading-relaxed">
-          {post.content}
-        </div>
-
-        <div className="border-t border-neutral-800" />
-
-        <div className="flex items-center justify-between text-xs text-neutral-500">
-          <div className="flex gap-5 items-center">
-            <span
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              className="flex items-center gap-2 cursor-pointer hover:text-green-400"
-            >
-              <i className="fa-regular fa-reply" />
-              REPLY [{post.reply_count}]
-            </span>
-
-            <span
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              className="flex items-center gap-2 cursor-pointer hover:text-green-400"
-            >
-              <i className="fa-regular fa-heart" />
-              LIKE [{post.likes}]
-            </span>
-          </div>
-
-          <span
-            onClick={handleShare}
-            className="flex items-center gap-2 cursor-pointer hover:text-green-400"
-          >
-            <i className="fa-regular fa-share-nodes" />
-            {copied ? "COPIED" : "PROPAGATE"}
-          </span>
+        <div
+          className="text-xs text-neutral-500 cursor-default"
+          title={new Date(post.created_at).toLocaleString()}
+        >
+          {timeAgo}
         </div>
       </div>
-    </Link>
+
+      <div className="border-l-2 border-green-400 pl-3 text-sm leading-relaxed">
+        {post.content}
+      </div>
+
+      <div className="border-t border-neutral-800" />
+
+      <div className="flex items-center justify-between text-xs text-neutral-500">
+        <div className="flex gap-5 items-center">
+          <span
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 cursor-pointer hover:text-green-400"
+          >
+            <i className="fa-regular fa-reply" />
+            REPLY [{post.reply_count}]
+          </span>
+
+          <span
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 cursor-pointer hover:text-green-400"
+          >
+            <i className="fa-regular fa-heart" />
+            LIKE [{post.likes}]
+          </span>
+        </div>
+
+        <span
+          onClick={handleShare}
+          className="flex items-center gap-2 cursor-pointer hover:text-green-400"
+        >
+          <i className="fa-regular fa-share-nodes" />
+          {copied ? "COPIED" : "PROPAGATE"}
+        </span>
+      </div>
+    </div>
   );
 }
