@@ -146,8 +146,8 @@ func (s *Service) GetRepliesCount(ctx context.Context, postID string) (int64, er
 	return s.repo.CountReplies(ctx, postID)
 }
 
-func (s *Service) GetThread(ctx context.Context, rootID string) ([]*Post, error) {
-	return s.repo.GetThread(ctx, rootID)
+func (s *Service) GetThread(ctx context.Context, rootID string, userID string) ([]*Post, error) {
+	return s.repo.GetThread(ctx, rootID, userID)
 }
 
 // Likes (single ops)

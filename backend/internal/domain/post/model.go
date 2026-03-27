@@ -7,6 +7,8 @@ type Post struct {
 	UserID       string
 	Username     string
 	Content      string
+	Likes        int64
+	Liked        bool
 	ParentPostID *string
 	RootPostID   *string
 	CreatedAt    time.Time

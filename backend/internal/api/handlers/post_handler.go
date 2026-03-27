@@ -283,6 +283,8 @@ func (h *PostHandler) ListReplies(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
+	userID := middlewares.GetUserID(r.Context())
+
 	// get post first
 	p, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
@@ -296,7 +298,7 @@ func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 		rootID = *p.RootPostID
 	}
 
-	posts, err := h.service.GetThread(r.Context(), rootID)
+	posts, err := h.service.GetThread(r.Context(), rootID, userID)
 	if err != nil {
 		util.NotFound(w, r)
 		return
@@ -311,6 +313,8 @@ func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 			Content:      p.Content,
 			CreatedAt:    p.CreatedAt.Format(time.RFC3339),
 			ParentPostID: p.ParentPostID,
+			Likes:        p.Likes,
+			Liked:        p.Liked,
 		})
 	}
 

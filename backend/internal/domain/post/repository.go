@@ -17,7 +17,7 @@ type Repository interface {
 	CreateReply(ctx context.Context, post *Post) error
 	ListReplies(ctx context.Context, postID string) ([]*Post, error)
 	CountReplies(ctx context.Context, postID string) (int64, error)
-	GetThread(ctx context.Context, rootID string) ([]*Post, error)
+	GetThread(ctx context.Context, rootID string, userID string) ([]*Post, error)
 
 	// Replies (batch, used for feeds/lists)
 	GetRepliesCountByPostIDs(ctx context.Context, postIDs []string) (map[string]int64, error)

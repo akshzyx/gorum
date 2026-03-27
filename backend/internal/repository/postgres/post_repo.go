@@ -170,8 +170,11 @@ func (r *PostRepository) GetRepliesCountByPostIDs(ctx context.Context, postIDs [
 	return result, nil
 }
 
-func (r *PostRepository) GetThread(ctx context.Context, rootID string) ([]*post.Post, error) {
-	rows, err := r.q.GetThread(ctx, rootID)
+func (r *PostRepository) GetThread(ctx context.Context, rootID string, userID string) ([]*post.Post, error) {
+	rows, err := r.q.GetThread(ctx, db.GetThreadParams{
+		ID:     rootID,
+		UserID: userID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +193,8 @@ func (r *PostRepository) GetThread(ctx context.Context, rootID string) ([]*post.
 			Content:      row.Content,
 			ParentPostID: parentID,
 			CreatedAt:    row.CreatedAt.Time,
+			Likes:        row.Likes,
+			Liked:        row.Liked,
 		})
 	}
 

@@ -44,8 +44,17 @@ export default function Page() {
       <main className="pt-16 md:ml-[180px] flex justify-center pb-24">
         <div className="w-full max-w-2xl flex flex-col gap-6 px-4">
           <div className="text-[10px] text-neutral-500 font-mono border-b border-neutral-800 pb-2">
-            LOCAL_FS / THREAD_ID: {id} /{" "}
-            <span className="text-green-400">LIVE_VIEW</span>
+            <span>
+              LOCAL_FS / THREAD_ID:{" "}
+              <span
+                onClick={() => navigator.clipboard.writeText(id as string)}
+                className="font-mono text-green-300 bg-green-400/10 px-1.5 py-[2px] rounded cursor-pointer hover:bg-green-400/20 active:bg-green-400/30 transition"
+                title="Click to copy"
+              >
+                {id}
+              </span>{" "}
+              /
+            </span>
           </div>
 
           <PostDetail post={post} />

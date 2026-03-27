@@ -26,4 +26,6 @@ type ReplyResponse struct {
 	Content      string  `json:"content"`
 	CreatedAt    string  `json:"created_at"`
 	ParentPostID *string `json:"parent_post_id,omitempty"`
+	Likes        int64   `json:"likes"`
+	Liked        bool    `json:"liked"`
 }

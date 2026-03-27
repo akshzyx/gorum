@@ -53,7 +53,7 @@ export default function ReplyBox({
 
         <button
           onClick={send}
-          className="border border-green-400 px-4 py-1 text-xs font-bold"
+          className="border border-green-400 px-4 py-1 text-xs font-bold cursor-pointer"
         >
           SEND_PKT
         </button>

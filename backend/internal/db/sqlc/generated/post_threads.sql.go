@@ -70,18 +70,45 @@ func (q *Queries) GetPostForReply(ctx context.Context, id string) (GetPostForRep
 
 const getThread = `-- name: GetThread :many
 SELECT 
-    posts.id,
-    posts.user_id,
-    posts.content,
-    posts.parent_post_id,
-    posts.created_at,
-    users.username
-FROM posts
-JOIN users ON users.id = posts.user_id
-WHERE (posts.id = $1 OR posts.root_post_id = $1)
-AND posts.deleted_at IS NULL
-ORDER BY posts.created_at ASC
+    p.id,
+    p.user_id,
+    p.content,
+    p.parent_post_id,
+    p.created_at,
+    u.username,
+
+    -- total likes
+    COALESCE(l.likes, 0) AS likes,
+
+    -- whether current user liked
+    CASE 
+        WHEN ul.post_id IS NOT NULL THEN true
+        ELSE false
+    END AS liked
+
+FROM posts p
+JOIN users u ON u.id = p.user_id
+
+LEFT JOIN (
+    SELECT post_id, COUNT(*) AS likes
+    FROM post_likes
+    GROUP BY post_id
+) l ON l.post_id = p.id
+
+LEFT JOIN post_likes ul 
+    ON ul.post_id = p.id 
+    AND ul.user_id = $2
+
+WHERE (p.id = $1 OR p.root_post_id = $1)
+AND p.deleted_at IS NULL
+
+ORDER BY p.created_at ASC
 `
+
+type GetThreadParams struct {
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
+}
 
 type GetThreadRow struct {
 	ID           string             `json:"id"`
@@ -90,10 +117,14 @@ type GetThreadRow struct {
 	ParentPostID pgtype.Text        `json:"parent_post_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	Username     string             `json:"username"`
+	Likes        int64              `json:"likes"`
+	Liked        bool               `json:"liked"`
 }
 
-func (q *Queries) GetThread(ctx context.Context, id string) ([]GetThreadRow, error) {
-	rows, err := q.db.Query(ctx, getThread, id)
+// likes count
+// user liked
+func (q *Queries) GetThread(ctx context.Context, arg GetThreadParams) ([]GetThreadRow, error) {
+	rows, err := q.db.Query(ctx, getThread, arg.ID, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +139,8 @@ func (q *Queries) GetThread(ctx context.Context, id string) ([]GetThreadRow, err
 			&i.ParentPostID,
 			&i.CreatedAt,
 			&i.Username,
+			&i.Likes,
+			&i.Liked,
 		); err != nil {
 			return nil, err
 		}

@@ -30,7 +30,6 @@ export default function PostDetail({ post }: Props) {
     const prevLiked = liked;
     const prevLikes = likes;
 
-    // optimistic update
     if (liked) {
       setLiked(false);
       setLikes((l: number) => l - 1);
@@ -46,7 +45,6 @@ export default function PostDetail({ post }: Props) {
         await unlikePost(post.id);
       }
     } catch {
-      // rollback
       setLiked(prevLiked);
       setLikes(prevLikes);
     } finally {
@@ -81,12 +79,18 @@ export default function PostDetail({ post }: Props) {
       <div className="flex gap-6 text-xs text-neutral-500 border-t border-neutral-800 pt-3 font-mono">
         <span
           onClick={handleLike}
-          className={`flex items-center gap-2 cursor-pointer ${
-            liked ? "text-green-400" : "hover:text-green-400"
+          className={`flex items-center gap-2 cursor-pointer transition ${
+            liked ? "text-green-400" : "text-neutral-500 hover:text-green-400"
           } ${loading ? "opacity-50 pointer-events-none" : ""}`}
         >
-          <i className={`${liked ? "fa-solid" : "fa-regular"} fa-thumbs-up`} />
-          VOTE_UP [{likes}]
+          <i
+            className={`${
+              liked ? "fa-solid text-green-400" : "fa-regular"
+            } fa-thumbs-up`}
+          />
+          <span className={liked ? "text-green-400" : ""}>
+            VOTE_UP [{likes}]
+          </span>
         </span>
 
         <span
