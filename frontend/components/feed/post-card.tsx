@@ -78,7 +78,10 @@ export default function PostCard({ post }: { post: Post }) {
       <div className="flex items-center justify-between text-xs text-neutral-500">
         <div className="flex gap-5 items-center">
           <span
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/post/${post.id}?reply=1`);
+            }}
             className="flex items-center gap-2 cursor-pointer hover:text-green-400"
           >
             <i className="fa-regular fa-reply" />
