@@ -4,9 +4,15 @@ VALUES ($1, $2, $3)
 RETURNING id, user_id, content, created_at;
 
 -- name: GetPostByID :one
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE id = $1 AND deleted_at IS NULL;
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.id = $1 AND p.deleted_at IS NULL;
 
 -- name: DeletePostByID :exec
 UPDATE posts

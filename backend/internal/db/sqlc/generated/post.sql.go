@@ -143,9 +143,15 @@ func (q *Queries) GetLikesCountByPostIDs(ctx context.Context, dollar_1 []string)
 }
 
 const getPostByID = `-- name: GetPostByID :one
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE id = $1 AND deleted_at IS NULL
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.id = $1 AND p.deleted_at IS NULL
 `
 
 type GetPostByIDRow struct {
@@ -153,6 +159,7 @@ type GetPostByIDRow struct {
 	UserID    string             `json:"user_id"`
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Username  string             `json:"username"`
 }
 
 func (q *Queries) GetPostByID(ctx context.Context, id string) (GetPostByIDRow, error) {
@@ -163,6 +170,7 @@ func (q *Queries) GetPostByID(ctx context.Context, id string) (GetPostByIDRow, e
 		&i.UserID,
 		&i.Content,
 		&i.CreatedAt,
+		&i.Username,
 	)
 	return i, err
 }

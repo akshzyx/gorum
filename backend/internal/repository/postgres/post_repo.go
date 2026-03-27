@@ -35,6 +35,7 @@ func (r *PostRepository) GetByID(ctx context.Context, id string) (*post.Post, er
 	return &post.Post{
 		ID:        row.ID,
 		UserID:    row.UserID,
+		Username:  row.Username,
 		Content:   row.Content,
 		CreatedAt: row.CreatedAt.Time,
 	}, nil

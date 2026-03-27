@@ -77,6 +77,7 @@ func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"id":         p.ID,
 		"user_id":    p.UserID,
+		"username":   p.Username,
 		"content":    p.Content,
 		"created_at": p.CreatedAt.Format(time.RFC3339),
 		"likes":      count,
