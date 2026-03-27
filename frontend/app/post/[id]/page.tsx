@@ -50,11 +50,14 @@ export default function Page() {
 
           <PostDetail post={post} />
 
-          <ReplyList replies={replies} />
+          <ReplyBox
+            postId={id as string}
+            onSuccess={() => window.location.reload()}
+          />
+
+          <ReplyList replies={replies} postId={id as string} />
         </div>
       </main>
-
-      <ReplyBox postId={id as string} />
     </div>
   );
 }

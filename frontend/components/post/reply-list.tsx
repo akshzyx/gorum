@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ReplyBox from "./reply-box";
 
 type Reply = {
   id: string;
@@ -14,6 +15,7 @@ type Reply = {
 
 type Props = {
   replies: Reply[];
+  postId: string;
 };
 
 function buildTree(replies: Reply[], rootID: string) {
@@ -40,7 +42,13 @@ function getLineColor(depth: number) {
   return `rgba(74, 222, 128, ${opacity})`;
 }
 
-function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
+function ReplyNode({
+  reply,
+  depth = 0,
+  activeReplyId,
+  setActiveReplyId,
+  postId,
+}: any) {
   const [expanded, setExpanded] = useState(false);
 
   const children = reply.children || [];
@@ -54,16 +62,18 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
 
   const hiddenCount = children.length - VISIBLE_COUNT;
 
+  const isActive = activeReplyId === reply.id;
+
   return (
     <div className="relative pl-6">
-      {/* CONTINUOUS LINE */}
+      {/* LINE */}
       <div
         className="absolute left-2 top-0 bottom-0 w-[2px]"
         style={{ backgroundColor: getLineColor(depth) }}
       />
 
       {/* NODE */}
-      <div className="group hover:bg-neutral-900/40 p-2 transition cursor-pointer">
+      <div className="group hover:bg-neutral-900/40 p-2 transition">
         {/* HEADER */}
         <div className="flex items-center gap-3 text-xs font-mono">
           <span className="text-green-400 w-4">
@@ -80,30 +90,47 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
         </div>
 
         {/* CONTENT */}
-        <div className="text-sm text-neutral-200 mt-2 leading-relaxed">
-          {reply.content}
-        </div>
+        <div className="text-sm text-neutral-200 mt-2">{reply.content}</div>
 
         {/* ACTIONS */}
         <div className="flex gap-4 text-[10px] text-neutral-500 mt-2 font-mono">
-          <span className="cursor-pointer hover:text-green-400">[ REPLY ]</span>
-          {/* <span className="cursor-pointer hover:text-green-400">
-            [ VOTE_UP ]
-          </span> */}
+          <span
+            onClick={() => setActiveReplyId(isActive ? null : reply.id)}
+            className="cursor-pointer hover:text-green-400"
+          >
+            [ REPLY ]
+          </span>
         </div>
+
+        {/* 🔥 INLINE REPLY BOX */}
+        {isActive && (
+          <ReplyBox
+            postId={postId}
+            parentId={reply.id}
+            small
+            placeholder={`REPLYING TO @${reply.username || reply.user_id}...`}
+            onSuccess={() => window.location.reload()}
+          />
+        )}
       </div>
 
       {/* CHILDREN */}
       {hasChildren && (
         <div className="mt-4 flex flex-col gap-4">
           {visibleChildren.map((child) => (
-            <ReplyNode key={child.id} reply={child} depth={depth + 1} />
+            <ReplyNode
+              key={child.id}
+              reply={child}
+              depth={depth + 1}
+              activeReplyId={activeReplyId}
+              setActiveReplyId={setActiveReplyId}
+              postId={postId}
+            />
           ))}
 
-          {/* EXPAND / COLLAPSE */}
           {!expanded && hiddenCount > 0 && (
             <div
-              className="font-mono text-[10px] text-neutral-400 cursor-pointer hover:text-green-400"
+              className="text-[10px] text-neutral-400 cursor-pointer hover:text-green-400 font-mono"
               onClick={() => setExpanded(true)}
             >
               [+] EXPAND ({hiddenCount} HIDDEN_NODES)
@@ -112,7 +139,7 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
 
           {expanded && hiddenCount > 0 && (
             <div
-              className="font-mono text-[10px] text-neutral-400 cursor-pointer hover:text-green-400"
+              className="text-[10px] text-neutral-400 cursor-pointer hover:text-green-400 font-mono"
               onClick={() => setExpanded(false)}
             >
               [-] COLLAPSE
@@ -124,7 +151,9 @@ function ReplyNode({ reply, depth = 0 }: { reply: Reply; depth?: number }) {
   );
 }
 
-export default function ReplyList({ replies }: Props) {
+export default function ReplyList({ replies, postId }: Props) {
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
+
   if (!replies.length) return null;
 
   const rootID = replies[0]?.parent_post_id;
@@ -140,7 +169,13 @@ export default function ReplyList({ replies }: Props) {
 
       {/* TREE */}
       {tree.map((r) => (
-        <ReplyNode key={r.id} reply={r} />
+        <ReplyNode
+          key={r.id}
+          reply={r}
+          activeReplyId={activeReplyId}
+          setActiveReplyId={setActiveReplyId}
+          postId={postId}
+        />
       ))}
     </div>
   );

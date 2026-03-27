@@ -30,3 +30,23 @@ export async function getThread(id: string) {
   );
   return res.json();
 }
+
+export async function createReply(postId: string, content: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/post/${postId}/reply`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ content }),
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error("failed to create reply");
+  }
+
+  return res.json();
+}
