@@ -111,10 +111,17 @@ func (q *Queries) GetThread(ctx context.Context, id string) ([]GetThreadRow, err
 }
 
 const listReplies = `-- name: ListReplies :many
-SELECT id, user_id, content, created_at
+SELECT 
+    posts.id,
+    posts.user_id,
+    posts.content,
+    posts.created_at,
+    users.username
 FROM posts
-WHERE parent_post_id = $1 AND deleted_at IS NULL
-ORDER BY created_at ASC
+JOIN users ON users.id = posts.user_id
+WHERE posts.parent_post_id = $1 
+AND posts.deleted_at IS NULL
+ORDER BY posts.created_at ASC
 `
 
 type ListRepliesRow struct {
@@ -122,6 +129,7 @@ type ListRepliesRow struct {
 	UserID    string             `json:"user_id"`
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Username  string             `json:"username"`
 }
 
 func (q *Queries) ListReplies(ctx context.Context, parentPostID pgtype.Text) ([]ListRepliesRow, error) {
@@ -138,6 +146,7 @@ func (q *Queries) ListReplies(ctx context.Context, parentPostID pgtype.Text) ([]
 			&i.UserID,
 			&i.Content,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}

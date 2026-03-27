@@ -134,6 +134,7 @@ func (r *PostRepository) ListReplies(ctx context.Context, postID string) ([]*pos
 		posts = append(posts, &post.Post{
 			ID:        row.ID,
 			UserID:    row.UserID,
+			Username:  row.Username,
 			Content:   row.Content,
 			CreatedAt: row.CreatedAt.Time,
 		})
@@ -390,6 +391,7 @@ func (r *PostRepository) ListRepliesCursorAsc(ctx context.Context, postID string
 		posts = append(posts, &post.Post{
 			ID:        row.ID,
 			UserID:    row.UserID,
+			Username:  row.Username,
 			Content:   row.Content,
 			CreatedAt: row.CreatedAt.Time,
 		})
@@ -424,6 +426,7 @@ func (r *PostRepository) ListRepliesCursorDesc(ctx context.Context, postID strin
 		posts = append(posts, &post.Post{
 			ID:        row.ID,
 			UserID:    row.UserID,
+			Username:  row.Username,
 			Content:   row.Content,
 			CreatedAt: row.CreatedAt.Time,
 		})

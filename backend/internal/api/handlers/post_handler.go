@@ -266,6 +266,7 @@ func (h *PostHandler) ListReplies(w http.ResponseWriter, r *http.Request) {
 		resp = append(resp, post.ReplyResponse{
 			ID:        p.ID,
 			UserID:    p.UserID,
+			Username:  p.Username,
 			Content:   p.Content,
 			CreatedAt: p.CreatedAt.Format(time.RFC3339),
 		})

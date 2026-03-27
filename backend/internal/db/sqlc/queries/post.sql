@@ -114,19 +114,31 @@ ORDER BY created_at DESC
 LIMIT $3;
 
 -- name: ListRepliesCursorAsc :many
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE parent_post_id = $1
-AND deleted_at IS NULL
-AND ($2::timestamptz IS NULL OR created_at > $2)
-ORDER BY created_at ASC
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.parent_post_id = $1
+AND p.deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR p.created_at > $2)
+ORDER BY p.created_at ASC
 LIMIT $3;
 
 -- name: ListRepliesCursorDesc :many
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE parent_post_id = $1
-AND deleted_at IS NULL
-AND ($2::timestamptz IS NULL OR created_at < $2)
-ORDER BY created_at DESC
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.parent_post_id = $1
+AND p.deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR p.created_at < $2)
+ORDER BY p.created_at DESC
 LIMIT $3;

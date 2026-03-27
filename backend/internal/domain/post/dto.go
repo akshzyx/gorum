@@ -22,6 +22,7 @@ type CreateReplyRequest struct {
 type ReplyResponse struct {
 	ID           string  `json:"id"`
 	UserID       string  `json:"user_id"`
+	Username     string  `json:"username"`
 	Content      string  `json:"content"`
 	CreatedAt    string  `json:"created_at"`
 	ParentPostID *string `json:"parent_post_id,omitempty"`
