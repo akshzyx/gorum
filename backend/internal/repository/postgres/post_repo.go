@@ -265,6 +265,7 @@ func (r *PostRepository) GetPostsByUser(ctx context.Context, userID string, limi
 		posts = append(posts, &post.Post{
 			ID:        row.ID,
 			UserID:    row.UserID,
+			Username:  row.Username,
 			Content:   row.Content,
 			CreatedAt: row.CreatedAt.Time,
 		})
@@ -287,6 +288,7 @@ func (r *PostRepository) GetRepliesByUser(ctx context.Context, userID string, li
 		posts = append(posts, &post.Post{
 			ID:        row.ID,
 			UserID:    row.UserID,
+			Username:  row.Username,
 			Content:   row.Content,
 			CreatedAt: row.CreatedAt.Time,
 		})
@@ -323,6 +325,7 @@ func (r *PostRepository) GetPostsByUserCursor(ctx context.Context, userID string
 		posts = append(posts, &post.Post{
 			ID:        row.ID,
 			UserID:    row.UserID,
+			Username:  row.Username,
 			Content:   row.Content,
 			CreatedAt: row.CreatedAt.Time,
 		})
@@ -359,6 +362,7 @@ func (r *PostRepository) GetRepliesByUserCursor(ctx context.Context, userID stri
 		posts = append(posts, &post.Post{
 			ID:        row.ID,
 			UserID:    row.UserID,
+			Username:  row.Username,
 			Content:   row.Content,
 			CreatedAt: row.CreatedAt.Time,
 		})

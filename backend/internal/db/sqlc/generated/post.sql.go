@@ -176,12 +176,18 @@ func (q *Queries) GetPostByID(ctx context.Context, id string) (GetPostByIDRow, e
 }
 
 const getPostsByUser = `-- name: GetPostsByUser :many
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE user_id = $1
-AND parent_post_id IS NULL
-AND deleted_at IS NULL
-ORDER BY created_at DESC
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.user_id = $1
+AND p.parent_post_id IS NULL
+AND p.deleted_at IS NULL
+ORDER BY p.created_at DESC
 LIMIT $2
 `
 
@@ -195,6 +201,7 @@ type GetPostsByUserRow struct {
 	UserID    string             `json:"user_id"`
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Username  string             `json:"username"`
 }
 
 func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) ([]GetPostsByUserRow, error) {
@@ -211,6 +218,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) 
 			&i.UserID,
 			&i.Content,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
@@ -223,13 +231,19 @@ func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) 
 }
 
 const getPostsByUserCursor = `-- name: GetPostsByUserCursor :many
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE user_id = $1
-AND parent_post_id IS NULL
-AND deleted_at IS NULL
-AND ($2::timestamptz IS NULL OR created_at < $2)
-ORDER BY created_at DESC
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.user_id = $1
+AND p.parent_post_id IS NULL
+AND p.deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR p.created_at < $2)
+ORDER BY p.created_at DESC
 LIMIT $3
 `
 
@@ -244,6 +258,7 @@ type GetPostsByUserCursorRow struct {
 	UserID    string             `json:"user_id"`
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Username  string             `json:"username"`
 }
 
 func (q *Queries) GetPostsByUserCursor(ctx context.Context, arg GetPostsByUserCursorParams) ([]GetPostsByUserCursorRow, error) {
@@ -260,6 +275,7 @@ func (q *Queries) GetPostsByUserCursor(ctx context.Context, arg GetPostsByUserCu
 			&i.UserID,
 			&i.Content,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
@@ -272,12 +288,18 @@ func (q *Queries) GetPostsByUserCursor(ctx context.Context, arg GetPostsByUserCu
 }
 
 const getRepliesByUser = `-- name: GetRepliesByUser :many
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE user_id = $1
-AND parent_post_id IS NOT NULL
-AND deleted_at IS NULL
-ORDER BY created_at DESC
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.user_id = $1
+AND p.parent_post_id IS NOT NULL
+AND p.deleted_at IS NULL
+ORDER BY p.created_at DESC
 LIMIT $2
 `
 
@@ -291,6 +313,7 @@ type GetRepliesByUserRow struct {
 	UserID    string             `json:"user_id"`
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Username  string             `json:"username"`
 }
 
 func (q *Queries) GetRepliesByUser(ctx context.Context, arg GetRepliesByUserParams) ([]GetRepliesByUserRow, error) {
@@ -307,6 +330,7 @@ func (q *Queries) GetRepliesByUser(ctx context.Context, arg GetRepliesByUserPara
 			&i.UserID,
 			&i.Content,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
@@ -319,13 +343,19 @@ func (q *Queries) GetRepliesByUser(ctx context.Context, arg GetRepliesByUserPara
 }
 
 const getRepliesByUserCursor = `-- name: GetRepliesByUserCursor :many
-SELECT id, user_id, content, created_at
-FROM posts
-WHERE user_id = $1
-AND parent_post_id IS NOT NULL
-AND deleted_at IS NULL
-AND ($2::timestamptz IS NULL OR created_at < $2)
-ORDER BY created_at DESC
+SELECT 
+  p.id,
+  p.user_id,
+  p.content,
+  p.created_at,
+  u.username
+FROM posts p
+JOIN users u ON u.id = p.user_id
+WHERE p.user_id = $1
+AND p.parent_post_id IS NOT NULL
+AND p.deleted_at IS NULL
+AND ($2::timestamptz IS NULL OR p.created_at < $2)
+ORDER BY p.created_at DESC
 LIMIT $3
 `
 
@@ -340,6 +370,7 @@ type GetRepliesByUserCursorRow struct {
 	UserID    string             `json:"user_id"`
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Username  string             `json:"username"`
 }
 
 func (q *Queries) GetRepliesByUserCursor(ctx context.Context, arg GetRepliesByUserCursorParams) ([]GetRepliesByUserCursorRow, error) {
@@ -356,6 +387,7 @@ func (q *Queries) GetRepliesByUserCursor(ctx context.Context, arg GetRepliesByUs
 			&i.UserID,
 			&i.Content,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
