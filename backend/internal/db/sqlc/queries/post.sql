@@ -106,10 +106,16 @@ ORDER BY p.created_at DESC
 LIMIT $2;
 
 -- name: GetRepliesCountByPostIDs :many
-SELECT parent_post_id AS post_id, COUNT(*) AS count
-FROM posts
-WHERE parent_post_id = ANY($1::text[])
-GROUP BY parent_post_id;
+SELECT 
+  root.post_id,
+  COUNT(p.id) AS count
+FROM (
+  SELECT unnest($1::text[]) AS post_id
+) root
+LEFT JOIN posts p
+ON p.root_post_id = root.post_id
+AND p.deleted_at IS NULL
+GROUP BY root.post_id;
 
 -- name: GetPostsByUserCursor :many
 SELECT 

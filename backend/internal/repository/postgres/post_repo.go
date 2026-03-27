@@ -160,9 +160,11 @@ func (r *PostRepository) GetRepliesCountByPostIDs(ctx context.Context, postIDs [
 
 	result := make(map[string]int64)
 	for _, row := range rows {
-		if row.PostID.Valid {
-			result[row.PostID.String] = row.Count
+		postID, ok := row.PostID.(string)
+		if !ok {
+			continue
 		}
+		result[postID] = row.Count
 	}
 
 	return result, nil
