@@ -281,7 +281,20 @@ func (h *PostHandler) ListReplies(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {
-	rootID := chi.URLParam(r, "id")
+	id := chi.URLParam(r, "id")
+
+	// get post first
+	p, err := h.service.GetByID(r.Context(), id)
+	if err != nil {
+		util.NotFound(w, r)
+		return
+	}
+
+	// resolve root
+	rootID := p.ID
+	if p.RootPostID != nil {
+		rootID = *p.RootPostID
+	}
 
 	posts, err := h.service.GetThread(r.Context(), rootID)
 	if err != nil {
@@ -301,5 +314,8 @@ func (h *PostHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	util.WriteJSON(w, http.StatusOK, resp)
+	util.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"data":      resp,
+		"target_id": id,
+	})
 }

@@ -43,6 +43,12 @@ func (s *Service) GetByID(ctx context.Context, id string) (*Post, error) {
 		return nil, ErrPostNotFound
 	}
 
+	// fetch root info also
+	parent, err := s.repo.GetPostForReply(ctx, id)
+	if err == nil && parent.RootPostID != nil {
+		post.RootPostID = parent.RootPostID
+	}
+
 	return post, nil
 }
 

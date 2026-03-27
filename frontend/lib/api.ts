@@ -28,7 +28,13 @@ export async function getThread(id: string) {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/thread`,
   );
-  return res.json();
+
+  const data = await res.json();
+
+  return {
+    thread: Array.isArray(data) ? data : data.data || [],
+    target_id: data.target_id || id,
+  };
 }
 
 export async function createReply(postId: string, content: string) {

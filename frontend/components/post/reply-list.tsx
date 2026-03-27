@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import ReplyBox from "./reply-box";
 import Link from "next/link";
 
@@ -17,6 +17,7 @@ type Reply = {
 type Props = {
   replies: Reply[];
   postId: string;
+  targetId?: string | null;
 };
 
 const VISIBLE_COUNT = 2;
@@ -51,38 +52,63 @@ function ReplyNode({
   activeReplyId,
   setActiveReplyId,
   postId,
+  targetId,
 }: any) {
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  const ref = useRef<HTMLDivElement>(null);
 
   const children = reply.children || [];
   const hasChildren = children.length > 0;
 
   const isActive = activeReplyId === reply.id;
 
-  // 🔥 LIMIT LOGIC
   const visibleChildren = expanded
     ? children
     : children.slice(0, VISIBLE_COUNT);
 
   const hiddenCount = children.length - VISIBLE_COUNT;
 
+  const hasScrolled = useRef(false);
+
+  useEffect(() => {
+    if (targetId === reply.id && ref.current && !hasScrolled.current) {
+      hasScrolled.current = true;
+
+      ref.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [targetId, reply.id]);
+
+  const handleCopy = (e: any) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/post/${reply.id}`;
+    navigator.clipboard.writeText(url);
+  };
+
   return (
     <div className="relative pl-6">
-      {/* LINE */}
       <div
         className="absolute left-2 top-0 bottom-0 w-[2px]"
         style={{ backgroundColor: getLineColor(depth) }}
       />
 
-      {/* NODE */}
       <div
+        ref={ref}
         onClick={() => {
           if (hasChildren) setCollapsed((p) => !p);
         }}
-        className="group hover:bg-neutral-900/40 p-2 transition cursor-pointer"
+        className={`group p-2 transition cursor-pointer
+  ${
+    targetId === reply.id
+      ? "bg-green-400/10 border border-green-400"
+      : "hover:bg-neutral-900/40"
+  }
+`}
       >
-        {/* HEADER */}
         <div className="flex items-center gap-3 text-xs font-mono">
           <span className="text-green-400 w-4">
             {!hasChildren ? "[·]" : collapsed ? "[+]" : "[-]"}
@@ -101,10 +127,8 @@ function ReplyNode({
           </span>
         </div>
 
-        {/* CONTENT */}
         <div className="text-sm text-neutral-200 mt-2">{reply.content}</div>
 
-        {/* ACTIONS */}
         <div
           className="flex gap-4 text-[10px] text-neutral-500 mt-2 font-mono"
           onClick={(e) => e.stopPropagation()}
@@ -115,9 +139,15 @@ function ReplyNode({
           >
             [ REPLY ]
           </span>
+
+          <span
+            onClick={handleCopy}
+            className="cursor-pointer hover:text-green-400"
+          >
+            [ PROPAGATE ]
+          </span>
         </div>
 
-        {/* INLINE REPLY */}
         {isActive && (
           <div onClick={(e) => e.stopPropagation()}>
             <ReplyBox
@@ -131,7 +161,6 @@ function ReplyNode({
         )}
       </div>
 
-      {/* CHILDREN */}
       {!collapsed && hasChildren && (
         <div className="mt-3 flex flex-col gap-3">
           {visibleChildren.map((child) => (
@@ -142,10 +171,10 @@ function ReplyNode({
               activeReplyId={activeReplyId}
               setActiveReplyId={setActiveReplyId}
               postId={postId}
+              targetId={targetId}
             />
           ))}
 
-          {/* 🔥 EXPAND NODE */}
           {!expanded && hiddenCount > 0 && (
             <div
               onClick={(e) => {
@@ -158,7 +187,6 @@ function ReplyNode({
             </div>
           )}
 
-          {/* OPTIONAL COLLAPSE BACK */}
           {expanded && hiddenCount > 0 && (
             <div
               onClick={(e) => {
@@ -176,7 +204,7 @@ function ReplyNode({
   );
 }
 
-export default function ReplyList({ replies, postId }: Props) {
+export default function ReplyList({ replies, postId, targetId }: Props) {
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
 
   if (!replies.length) return null;
@@ -198,6 +226,7 @@ export default function ReplyList({ replies, postId }: Props) {
           activeReplyId={activeReplyId}
           setActiveReplyId={setActiveReplyId}
           postId={postId}
+          targetId={targetId}
         />
       ))}
     </div>
