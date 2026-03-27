@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type Props = {
@@ -21,9 +22,13 @@ export default function PostDetail({ post }: Props) {
       {/* TOP BAR */}
       <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
         <div className="flex gap-3 text-xs font-mono">
-          <span className="text-green-400 font-bold">
+          <Link
+            href={`/user/${post.username || post.user_id}`}
+            className="text-green-400 font-bold hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
             @{post.username || post.user_id}
-          </span>
+          </Link>
 
           <span className="text-neutral-500">
             [{new Date(post.created_at).toLocaleString()}]

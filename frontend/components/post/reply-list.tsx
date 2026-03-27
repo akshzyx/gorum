@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ReplyBox from "./reply-box";
+import Link from "next/link";
 
 type Reply = {
   id: string;
@@ -87,9 +88,13 @@ function ReplyNode({
             {!hasChildren ? "[·]" : collapsed ? "[+]" : "[-]"}
           </span>
 
-          <span className="text-green-400 font-bold">
+          <Link
+            href={`/user/${reply.username || reply.user_id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-green-400 font-bold hover:underline"
+          >
             @{reply.username || reply.user_id}
-          </span>
+          </Link>
 
           <span className="text-neutral-500">
             {new Date(reply.created_at).toLocaleTimeString()}
