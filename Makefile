@@ -24,6 +24,9 @@ seed:
 dev:
 	cd $(BACKEND_DIR) && make dev
 
+sqlc:
+	cd $(BACKEND_DIR) && sqlc generate
+
 # frontend
 
 run-frontend:

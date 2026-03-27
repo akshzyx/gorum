@@ -149,12 +149,18 @@ var sampleReplies = []string{
 
 // recursive threads (better graph)
 func createRepliesRecursive(ctx context.Context, repo *postgres.PostRepository, users []string, rootID string, parentID string, depth int, r *rand.Rand) int {
-	if depth > 3 {
+	if depth > 6 {
 		return 0
 	}
 
 	count := 0
-	numReplies := r.Intn(3)
+
+	var numReplies int
+	if depth == 0 {
+		numReplies = r.Intn(4) + 2
+	} else {
+		numReplies = r.Intn(3)
+	}
 
 	for i := 0; i < numReplies; i++ {
 		replyID := uuid.New().String()
@@ -174,7 +180,9 @@ func createRepliesRecursive(ctx context.Context, repo *postgres.PostRepository, 
 		count++
 
 		// recursive depth
-		count += createRepliesRecursive(ctx, repo, users, rootID, replyID, depth+1, r)
+		if r.Intn(100) < 70 {
+			count += createRepliesRecursive(ctx, repo, users, rootID, replyID, depth+1, r)
+		}
 	}
 
 	return count
@@ -185,7 +193,7 @@ func seedReplies(ctx context.Context, repo *postgres.PostRepository, users, post
 	total := 0
 
 	for _, postID := range posts {
-		if r.Intn(100) > 70 {
+		if r.Intn(100) > 85 {
 			continue
 		}
 

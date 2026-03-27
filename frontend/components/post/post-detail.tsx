@@ -10,7 +10,7 @@ export default function PostDetail({ post }: Props) {
       <div className="flex justify-between items-center border-b border-neutral-800 pb-2">
         <div className="flex gap-3 text-xs">
           <span className="text-green-400 font-bold">
-            @{post.username || post.user_id} {/* ✅ fallback */}
+            @{post.username || post.user_id} {/* fallback */}
           </span>
           <span className="text-neutral-500">
             [{new Date(post.created_at).toLocaleString()}]

@@ -17,9 +17,7 @@ export default function ReplyList({ replies }: Props) {
 
           <div className="flex flex-col gap-2">
             <div className="flex gap-3 text-xs">
-              <span className="text-green-400">
-                @{r.username || r.user_id} {/* ✅ FIX */}
-              </span>
+              <span className="text-green-400">@{r.username || r.user_id}</span>
               <span className="text-neutral-500">
                 {new Date(r.created_at).toLocaleTimeString()}
               </span>
