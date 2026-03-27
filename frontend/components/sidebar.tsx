@@ -21,7 +21,7 @@ export default function Sidebar({
 
   return (
     <>
-      {/* OVERLAY (mobile) */}
+      {/* OVERLAY */}
       {open && (
         <div
           onClick={() => setOpen(false)}
@@ -31,12 +31,12 @@ export default function Sidebar({
 
       <aside
         className={`
-          fixed top-0 left-0 h-screen w-[180px] bg-[#0e0e0e] border-r border-neutral-800 z-50
-          transform transition-transform duration-200
-          ${open ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:flex md:flex-col hidden md:block
-          font-mono text-xs uppercase tracking-wider
-        `}
+  fixed top-0 left-0 h-screen w-[180px] bg-[#0e0e0e] border-r border-neutral-800 z-50
+  transform transition-transform duration-300 ease-in-out
+  ${open ? "translate-x-0" : "-translate-x-full"}
+  md:translate-x-0
+  flex flex-col
+`}
       >
         {/* HEADER */}
         <div className="px-4 pt-6 pb-8">

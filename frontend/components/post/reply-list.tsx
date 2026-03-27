@@ -18,6 +18,8 @@ type Props = {
   postId: string;
 };
 
+const VISIBLE_COUNT = 2;
+
 function buildTree(replies: Reply[], rootID: string) {
   const map = new Map<string, Reply>();
   const roots: Reply[] = [];
@@ -50,11 +52,19 @@ function ReplyNode({
   postId,
 }: any) {
   const [collapsed, setCollapsed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const children = reply.children || [];
   const hasChildren = children.length > 0;
 
   const isActive = activeReplyId === reply.id;
+
+  // 🔥 LIMIT LOGIC
+  const visibleChildren = expanded
+    ? children
+    : children.slice(0, VISIBLE_COUNT);
+
+  const hiddenCount = children.length - VISIBLE_COUNT;
 
   return (
     <div className="relative pl-6">
@@ -64,10 +74,10 @@ function ReplyNode({
         style={{ backgroundColor: getLineColor(depth) }}
       />
 
-      {/* NODE (CLICKABLE) */}
+      {/* NODE */}
       <div
         onClick={() => {
-          if (hasChildren) setCollapsed((prev: boolean) => !prev);
+          if (hasChildren) setCollapsed((p) => !p);
         }}
         className="group hover:bg-neutral-900/40 p-2 transition cursor-pointer"
       >
@@ -92,7 +102,7 @@ function ReplyNode({
         {/* ACTIONS */}
         <div
           className="flex gap-4 text-[10px] text-neutral-500 mt-2 font-mono"
-          onClick={(e) => e.stopPropagation()} // 🔥 IMPORTANT
+          onClick={(e) => e.stopPropagation()}
         >
           <span
             onClick={() => setActiveReplyId(isActive ? null : reply.id)}
@@ -102,7 +112,7 @@ function ReplyNode({
           </span>
         </div>
 
-        {/* INLINE REPLY BOX */}
+        {/* INLINE REPLY */}
         {isActive && (
           <div onClick={(e) => e.stopPropagation()}>
             <ReplyBox
@@ -119,7 +129,7 @@ function ReplyNode({
       {/* CHILDREN */}
       {!collapsed && hasChildren && (
         <div className="mt-3 flex flex-col gap-3">
-          {children.map((child) => (
+          {visibleChildren.map((child) => (
             <ReplyNode
               key={child.id}
               reply={child}
@@ -129,6 +139,32 @@ function ReplyNode({
               postId={postId}
             />
           ))}
+
+          {/* 🔥 EXPAND NODE */}
+          {!expanded && hiddenCount > 0 && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(true);
+              }}
+              className="font-mono text-[10px] text-neutral-400 cursor-pointer hover:text-green-400"
+            >
+              [+] EXPAND ({hiddenCount} HIDDEN_NODES)
+            </div>
+          )}
+
+          {/* OPTIONAL COLLAPSE BACK */}
+          {expanded && hiddenCount > 0 && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(false);
+              }}
+              className="font-mono text-[10px] text-neutral-400 cursor-pointer hover:text-green-400"
+            >
+              [-] COLLAPSE
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -145,13 +181,11 @@ export default function ReplyList({ replies, postId }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* HEADER */}
       <div className="text-xs text-neutral-500 border-b border-neutral-700 pb-2 font-mono flex justify-between">
         <span>REPLIES [{replies.length}]</span>
         <span className="text-green-400/50">THREAD_DENSITY: NOMINAL</span>
       </div>
 
-      {/* TREE */}
       {tree.map((r) => (
         <ReplyNode
           key={r.id}
