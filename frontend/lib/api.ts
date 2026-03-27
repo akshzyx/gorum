@@ -21,12 +21,12 @@ export async function getPosts(cursor?: string) {
 export async function getPostById(id: string) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/post/${id}`);
   const json = await res.json();
-  return json.data || json; // ✅ FIX
+  return json.data || json;
 }
 
-export async function getReplies(id: string) {
+export async function getThread(id: string) {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/replies`,
+    `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/thread`,
   );
-  return res.json(); // already handled in page
+  return res.json();
 }

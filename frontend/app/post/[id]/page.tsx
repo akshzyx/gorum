@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getPostById, getReplies } from "@/lib/api";
+
+import { getThread } from "@/lib/api";
 
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
@@ -21,11 +22,13 @@ export default function Page() {
     if (!id) return;
 
     const load = async () => {
-      const p = await getPostById(id as string);
-      const r = await getReplies(id as string);
+      const thread = await getThread(id as string);
 
-      setPost(p);
-      setReplies(r.data);
+      // first item = main post
+      setPost(thread[0]);
+
+      // rest = replies
+      setReplies(thread.slice(1));
     };
 
     load();
@@ -38,17 +41,15 @@ export default function Page() {
       <Navbar />
       <Sidebar />
 
-      <main className="pt-20 md:pl-64 flex justify-center">
-        <div className="w-full max-w-3xl flex flex-col gap-10 px-4 pb-25">
-          {/* HEADER LINE */}
-          <div className="text-xs text-neutral-500 font-mono tracking-wide">
-            LOCAL_GP / THREAD_ID: {id} /{" "}
+      <main className="pt-20 md:pl-64 flex justify-center pb-32">
+        <div className="w-full max-w-3xl flex flex-col gap-10 px-4">
+          <div className="text-xs text-neutral-500 font-mono">
+            LOCAL_FS / THREAD_ID: {id} /{" "}
+            <span className="text-green-400">LIVE_VIEW</span>
           </div>
 
-          {/* POST */}
           <PostDetail post={post} />
 
-          {/* REPLIES */}
           <ReplyList replies={replies} />
         </div>
       </main>
