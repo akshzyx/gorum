@@ -30,7 +30,7 @@ export default function ReplyBox({
   const send = async () => {
     if (!text.trim()) return;
 
-    await createReply(postId, text);
+    await createReply(postId, text, parentId);
 
     setText("");
     onSuccess?.();

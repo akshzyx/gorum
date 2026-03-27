@@ -19,15 +19,13 @@ export async function getPosts(cursor?: string) {
 }
 
 export async function getPostById(id: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/post/${id}`);
+  const res = await fetch(`${BASE_URL}/post/${id}`);
   const json = await res.json();
   return json.data || json;
 }
 
 export async function getThread(id: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/thread`,
-  );
+  const res = await fetch(`${BASE_URL}/post/${id}/thread`);
 
   const data = await res.json();
 
@@ -37,18 +35,22 @@ export async function getThread(id: string) {
   };
 }
 
-export async function createReply(postId: string, content: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/post/${postId}/reply`,
-    {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ content }),
+// UPDATED: supports nested replies
+export async function createReply(
+  postId: string,
+  content: string,
+  parentId?: string,
+) {
+  const targetId = parentId || postId;
+
+  const res = await fetch(`${BASE_URL}/post/${targetId}/reply`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({ content }),
+  });
 
   if (!res.ok) {
     throw new Error("failed to create reply");
@@ -57,46 +59,8 @@ export async function createReply(postId: string, content: string) {
   return res.json();
 }
 
-export async function login(email: string, password: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!res.ok) {
-    throw new Error("invalid credentials");
-  }
-
-  return res.json();
-}
-
-export async function getMe() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/me`, {
-    credentials: "include",
-  });
-
-  if (!res.ok) return null;
-
-  return res.json();
-}
-
-export async function logout() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
-    method: "POST",
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    throw new Error("logout failed");
-  }
-}
-
 export async function createPost(content: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/post`, {
+  const res = await fetch(`${BASE_URL}/post`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -113,25 +77,57 @@ export async function createPost(content: string) {
 }
 
 export async function likePost(id: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/like`,
-    {
-      method: "POST",
-      credentials: "include",
-    },
-  );
+  const res = await fetch(`${BASE_URL}/post/${id}/like`, {
+    method: "POST",
+    credentials: "include",
+  });
 
   if (!res.ok) throw new Error("like failed");
 }
 
 export async function unlikePost(id: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/post/${id}/like`,
-    {
-      method: "DELETE",
-      credentials: "include",
-    },
-  );
+  const res = await fetch(`${BASE_URL}/post/${id}/like`, {
+    method: "DELETE",
+    credentials: "include",
+  });
 
   if (!res.ok) throw new Error("unlike failed");
+}
+
+export async function login(email: string, password: string) {
+  const res = await fetch(`${BASE_URL}/auth/login`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    throw new Error("invalid credentials");
+  }
+
+  return res.json();
+}
+
+export async function getMe() {
+  const res = await fetch(`${BASE_URL}/me`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) return null;
+
+  return res.json();
+}
+
+export async function logout() {
+  const res = await fetch(`${BASE_URL}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error("logout failed");
+  }
 }
