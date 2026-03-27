@@ -33,7 +33,7 @@ export default function ComposeBox({ onPost }: any) {
       <div className="flex justify-end mt-2">
         <button
           onClick={submit}
-          className="bg-green-400 text-black px-4 py-1 text-xs"
+          className="bg-green-400 text-black px-4 py-1 text-xs cursor-pointer"
         >
           {loading ? "EXECUTING..." : "EXECUTE_POST"}
         </button>
